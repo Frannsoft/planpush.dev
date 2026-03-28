@@ -177,7 +177,7 @@ function buildSidebar({ sessionId, currentUserId, displayName, apiOrigin, curren
 
   document.addEventListener('visibilitychange', function() {
     if (document.hidden) stopPolling();
-    else startPolling();
+    else if (state.open) startPolling();
   });
 
   // --- API calls (cookie-based auth, no Bearer token needed) ---

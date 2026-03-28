@@ -4,7 +4,7 @@ import { buildOverlayHTML } from '../utils/commentOverlay.js';
 function generateNonce() {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
-  return btoa(String.fromCharCode(...bytes));
+  return Buffer.from(bytes).toString('base64url');
 }
 
 function buildCsp(nonce) {
@@ -17,7 +17,7 @@ function buildCsp(nonce) {
     "connect-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'none'",
-    "form-action 'none'",
+    "form-action 'self'",
     "object-src 'none'",
   ].join('; ');
 }
@@ -31,6 +31,13 @@ export async function handleServe(req, res) {
     return res.status(400).json({ error: 'missing_session_id' });
   }
 
+  // Auth check first — don't leak session existence to unauthenticated users
+  const tokenData = await verifyRequest(req);
+  if (!tokenData) {
+    const redirectTo = encodeURIComponent(`/p/${sessionId}`);
+    return res.redirect(`/auth/login?redirect_to=${redirectTo}`);
+  }
+
   // Look up session in DB
   const session = await db.prepare(
     `SELECT id, current_version, created_at FROM sessions WHERE id = ?`
@@ -38,13 +45,6 @@ export async function handleServe(req, res) {
 
   if (!session) {
     return res.status(404).set('Content-Type', 'text/html; charset=UTF-8').send(notFoundPage());
-  }
-
-  // Auth check — redirect to login if not authenticated
-  const tokenData = await verifyRequest(req);
-  if (!tokenData) {
-    const redirectTo = encodeURIComponent(`/p/${sessionId}`);
-    return res.redirect(`/auth/login?redirect_to=${redirectTo}`);
   }
 
   // Fetch HTML from KV

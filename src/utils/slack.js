@@ -8,48 +8,53 @@ export async function notifySlack({ event, sessionId, sessionTitle, author, cont
   let text;
   let blocks;
 
+  const safeAuthor = escSlack(author);
+  const safeTitle = escSlack(sessionTitle);
+  const safeAnchor = escSlack(anchor);
+  const safeContent = escSlack(truncate(content, 200));
+
   switch (event) {
     case 'comment_added':
-      text = `${author} commented on "${sessionTitle}"`;
+      text = `${safeAuthor} commented on "${safeTitle}"`;
       blocks = [
         {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `*${author}* commented on *<${planUrl}|${sessionTitle}>*${anchor ? ` (on \`${anchor}\`)` : ''}`,
+            text: `*${safeAuthor}* commented on *<${planUrl}|${safeTitle}>*${safeAnchor ? ` (on \`${safeAnchor}\`)` : ''}`,
           },
         },
         {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `> ${truncate(content, 200)}`,
+            text: `> ${safeContent}`,
           },
         },
       ];
       break;
 
     case 'plan_updated':
-      text = `${author} updated "${sessionTitle}"`;
+      text = `${safeAuthor} updated "${safeTitle}"`;
       blocks = [
         {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `*${author}* updated the plan *<${planUrl}|${sessionTitle}>*`,
+            text: `*${safeAuthor}* updated the plan *<${planUrl}|${safeTitle}>*`,
           },
         },
       ];
       break;
 
     case 'comment_resolved':
-      text = `${author} resolved a comment on "${sessionTitle}"`;
+      text = `${safeAuthor} resolved a comment on "${safeTitle}"`;
       blocks = [
         {
           type: 'section',
           text: {
             type: 'mrkdwn',
-            text: `*${author}* resolved a comment on *<${planUrl}|${sessionTitle}>*${anchor ? ` (\`${anchor}\`)` : ''}`,
+            text: `*${safeAuthor}* resolved a comment on *<${planUrl}|${safeTitle}>*${safeAnchor ? ` (\`${safeAnchor}\`)` : ''}`,
           },
         },
       ];
@@ -73,4 +78,10 @@ export async function notifySlack({ event, sessionId, sessionTitle, author, cont
 function truncate(str, max) {
   if (!str) return '';
   return str.length > max ? str.slice(0, max) + '...' : str;
+}
+
+// Escape user-supplied strings for Slack mrkdwn
+function escSlack(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

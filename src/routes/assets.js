@@ -26,6 +26,6 @@ export function handleAsset(req, res) {
     'Content-Type': contentType,
     'Cache-Control': 'public, max-age=86400, s-maxage=604800',
     'ETag': asset.etag,
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': process.env.BASE_URL || '*',
   }).send(asset.body);
 }

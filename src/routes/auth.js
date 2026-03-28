@@ -213,19 +213,20 @@ export async function handleAuthDeviceToken(req, res) {
 
     if (!user) return res.status(400).json({ error: 'user_not_found' });
 
-    // Issue refresh token
+    // Atomic: delete device code + issue refresh token in one transaction
+    // Prevents double-redemption if CLI polls twice concurrently
     const refreshToken = generateRefreshToken();
     const hashed = await hashToken(refreshToken);
     const tokenId = crypto.randomUUID();
 
-    await db.prepare(
-      `INSERT INTO api_tokens (id, user_id, hashed_token) VALUES (?, ?, ?)`
-    ).bind(tokenId, user.id, hashed).run();
+    const issued = await db._knex.transaction(async (trx) => {
+      const deleted = await trx('device_codes').where({ device_code }).delete();
+      if (deleted === 0) return false; // another request already claimed it
+      await trx('api_tokens').insert({ id: tokenId, user_id: user.id, hashed_token: hashed });
+      return true;
+    });
 
-    // Clean up device code
-    await db.prepare(
-      `DELETE FROM device_codes WHERE device_code = ?`
-    ).bind(device_code).run();
+    if (!issued) return res.status(400).json({ error: 'invalid_request' });
 
     return res.json({
       refresh_token: refreshToken,

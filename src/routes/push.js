@@ -20,10 +20,16 @@ export async function handlePush(req, res) {
   const existingSessionId = req.headers['x-session-id'];
   let sessionId;
   let currentVersion;
+  let sessionTitle;
 
   if (existingSessionId) {
+    // Validate session ID format
+    if (!/^sess_[0-9a-f]{12}$/.test(existingSessionId)) {
+      return res.status(400).json({ error: 'invalid_session_id' });
+    }
+
     const session = await db.prepare(
-      `SELECT id, created_by FROM sessions WHERE id = ?`
+      `SELECT id, title, created_by FROM sessions WHERE id = ?`
     ).bind(existingSessionId).first();
 
     if (!session) {
@@ -36,16 +42,19 @@ export async function handlePush(req, res) {
     }
 
     sessionId = existingSessionId;
+    sessionTitle = session.title;
 
-    // Update last_updated and increment version
-    await db.prepare(
-      `UPDATE sessions SET last_updated = datetime('now'), current_version = current_version + 1 WHERE id = ?`
-    ).bind(sessionId).run();
-
-    const versionRow = await db.prepare(
-      `SELECT current_version FROM sessions WHERE id = ?`
-    ).bind(sessionId).first();
-    currentVersion = versionRow.current_version;
+    // Atomic version increment + read inside transaction
+    currentVersion = await db._knex.transaction(async (trx) => {
+      await trx('sessions')
+        .where('id', sessionId)
+        .update({
+          last_updated: db._knex.fn.now(),
+          current_version: db._knex.raw('current_version + 1'),
+        });
+      const row = await trx('sessions').where('id', sessionId).select('current_version').first();
+      return row.current_version;
+    });
   } else {
     // Create new session
     sessionId = generateSessionId();
@@ -54,11 +63,11 @@ export async function handlePush(req, res) {
     // Extract title from HTML <title> tag if present, decode HTML entities
     const titleMatch = html.match(/<title>([^<]*)<\/title>/i);
     const rawTitle = titleMatch ? titleMatch[1].trim().slice(0, 200) : 'Untitled Plan';
-    const title = rawTitle.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+    sessionTitle = rawTitle.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 
     await db.prepare(
       `INSERT INTO sessions (id, title, created_by) VALUES (?, ?, ?)`
-    ).bind(sessionId, title, tokenData.user_id).run();
+    ).bind(sessionId, sessionTitle, tokenData.user_id).run();
   }
 
   // Write HTML to KV (current + versioned snapshot)
@@ -72,18 +81,13 @@ export async function handlePush(req, res) {
   const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
   const planUrl = `${baseUrl}/p/${sessionId}`;
 
-  // Get session title for Slack notification
-  const sessionRow = await db.prepare(
-    `SELECT title FROM sessions WHERE id = ?`
-  ).bind(sessionId).first();
-
   // Fire-and-forget Slack notification (only on subsequent pushes)
   if (existingSessionId) {
     setImmediate(() => {
       notifySlack({
         event: 'plan_updated',
         sessionId,
-        sessionTitle: sessionRow?.title || 'Untitled Plan',
+        sessionTitle: sessionTitle || 'Untitled Plan',
         author: tokenData.display_name || tokenData.github_username,
         planUrl,
       }).catch(console.error);

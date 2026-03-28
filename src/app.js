@@ -1,8 +1,10 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { db } from './db.js';
 import { DbKv } from './kv.js';
-import { requireAuth, requireAuthOrRedirect, requireAdmin } from './middleware/auth.js';
+import { requireAuth } from './middleware/auth.js';
 import { handleLogin, handleCallback, handleLogout, handleAuthDevice, handleAuthDeviceToken, handleAuthToken, handleActivateGet, handleActivatePost, handleInfo, handleSessionCheck } from './routes/auth.js';
 import { handlePush } from './routes/push.js';
 import { handleServe } from './routes/serve.js';
@@ -11,7 +13,9 @@ import { handleDashboard } from './routes/dashboard.js';
 import { handleAsset } from './routes/assets.js';
 
 // Validate required env vars at startup
-if (!process.env.SECRET_KEY) throw new Error('SECRET_KEY environment variable is required');
+if (!process.env.SECRET_KEY || process.env.SECRET_KEY.length < 32) {
+  throw new Error('SECRET_KEY must be at least 32 characters');
+}
 if (!process.env.GITHUB_CLIENT_ID) throw new Error('GITHUB_CLIENT_ID environment variable is required');
 if (!process.env.GITHUB_CLIENT_SECRET) throw new Error('GITHUB_CLIENT_SECRET environment variable is required');
 
@@ -22,10 +26,28 @@ const kv = new DbKv();
 app.locals.db = db;
 app.locals.kv = kv;
 
+// Global security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // CSP set per-page where HTML is returned
+  crossOriginEmbedderPolicy: false,
+}));
+
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.text({ type: 'text/html', limit: '10mb' }));
 app.use(cookieParser());
+
+// Rate limiting on auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'too_many_requests' },
+});
+app.use('/api/auth/', authLimiter);
+app.use('/activate', authLimiter);
+app.use('/auth/', authLimiter);
 
 // Health check
 app.get('/health', (req, res) => {

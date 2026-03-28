@@ -41,6 +41,12 @@ export async function handlePostComment(req, res) {
   if (!session_id || !content) {
     return res.status(400).json({ error: 'missing_fields', required: ['session_id', 'content'] });
   }
+  if (content.length > 4000) {
+    return res.status(400).json({ error: 'comment_too_long', max: 4000 });
+  }
+  if (anchor && anchor.length > 200) {
+    return res.status(400).json({ error: 'anchor_too_long', max: 200 });
+  }
 
   const session = await db.prepare(
     `SELECT id, title, current_version FROM sessions WHERE id = ?`

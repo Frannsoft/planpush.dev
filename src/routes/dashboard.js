@@ -53,8 +53,10 @@ export async function handleDashboard(req, res) {
 }
 
 function timeAgo(dateStr) {
+  if (!dateStr) return 'unknown';
   const now = Date.now();
   const then = new Date(dateStr).getTime();
+  if (isNaN(then)) return 'unknown';
   const diff = now - then;
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'just now';
