@@ -11,7 +11,7 @@ function buildCsp(nonce) {
   return [
     "default-src 'none'",
     `script-src 'nonce-${nonce}'`,
-    "style-src 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' data: https:",
     "connect-src 'self'",
