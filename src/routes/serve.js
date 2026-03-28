@@ -1,7 +1,7 @@
 import { knex } from '../db.js';
 import { kv } from '../kv.js';
 import { buildOverlayHTML } from '../utils/commentOverlay.js';
-import { BASE_PAGE_CSS } from '../utils/html.js';
+import { BASE_PAGE_CSS, escHtml } from '../utils/html.js';
 
 function generateNonce() {
   const bytes = new Uint8Array(16);
@@ -49,10 +49,20 @@ export async function handleServe(req, res) {
     return res.status(404).set('Content-Type', 'text/html; charset=UTF-8').send(notFoundPage());
   }
 
+  // Support ?v=N to view a specific version
+  const requestedVersion = parseInt(req.query.v, 10);
+  const isVersioned = requestedVersion > 0 && requestedVersion < session.current_version;
+
   // Fetch HTML from KV
-  const html = await kv.get(`plan:${sessionId}:current`);
+  const kvKey = isVersioned
+    ? `plan:${sessionId}:v:${requestedVersion}`
+    : `plan:${sessionId}:current`;
+  const html = await kv.get(kvKey);
 
   if (!html) {
+    if (isVersioned) {
+      return res.status(404).set('Content-Type', 'text/html; charset=UTF-8').send(versionNotFoundPage(sessionId, requestedVersion));
+    }
     return res.status(404).set('Content-Type', 'text/html; charset=UTF-8').send(notFoundPage());
   }
 
@@ -67,6 +77,7 @@ export async function handleServe(req, res) {
     displayName: tokenData.display_name,
     apiOrigin: baseUrl,
     currentVersion: session.current_version,
+    viewingVersion: isVersioned ? requestedVersion : null,
     nonce,
   });
 
@@ -94,6 +105,16 @@ function notFoundPage() {
 <style>
 ${BASE_PAGE_CSS}
 body{display:flex;align-items:center;justify-content:center;min-height:100vh}
-.c{text-align:center}h1{font-size:48px;margin-bottom:8px}p{color:var(--muted);font-size:14px}
+.c{text-align:center}h1{font-size:48px;margin-bottom:8px}p{color:var(--muted);font-size:14px}a{color:var(--accent)}
 </style></head><body><div class="c"><h1>404</h1><p>This plan doesn't exist or has been removed.</p></div></body></html>`;
+}
+
+function versionNotFoundPage(sessionId, version) {
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Version Not Found</title>
+<style>
+${BASE_PAGE_CSS}
+body{display:flex;align-items:center;justify-content:center;min-height:100vh}
+.c{text-align:center}h1{font-size:48px;margin-bottom:8px}p{color:var(--muted);font-size:14px}a{color:var(--accent)}
+</style></head><body><div class="c"><h1>404</h1><p>Version ${parseInt(version, 10)} has expired or doesn't exist.</p><p style="margin-top:8px"><a href="/p/${escHtml(sessionId)}">View latest version</a></p></div></body></html>`;
 }

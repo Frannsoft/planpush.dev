@@ -47,6 +47,12 @@ export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardL
       </a>
     </div>
     <div id="pp-header-right">
+      <button id="pp-share-btn" class="pp-header-btn" title="Copy link" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      </button>
+      <button id="pp-info-btn" class="pp-header-btn" title="Plan info" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      </button>
       <span id="pp-header-user">${userName}</span>
       ${dashboardLink}
       <button id="pp-logout-btn" class="pp-header-btn" title="Sign out">

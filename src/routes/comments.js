@@ -119,7 +119,7 @@ export async function handleResolveComment(req, res) {
     return res.status(403).json({ error: 'only_author_can_resolve' });
   }
 
-  await knex('comments').where({ id: commentId }).update({ resolved: 1 });
+  await knex('comments').where({ id: commentId }).update({ resolved: 1, resolved_at: knex.fn.now() });
 
   // Fire-and-forget Slack notification
   const planUrl = `${req.planpushBaseUrl}/p/${comment.session_id}`;

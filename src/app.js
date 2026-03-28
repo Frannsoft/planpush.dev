@@ -9,6 +9,7 @@ import { handlePush } from './routes/push.js';
 import { handleServe } from './routes/serve.js';
 import { handleGetComments, handlePostComment, handleResolveComment } from './routes/comments.js';
 import { handleDashboard } from './routes/dashboard.js';
+import { handleSessionInfo } from './routes/sessionInfo.js';
 import { handleAsset } from './routes/assets.js';
 
 // Validate required env vars at startup
@@ -68,6 +69,7 @@ app.post('/api/push', requireAuth, handlePush);
 app.get('/api/comments', requireAuth, handleGetComments);
 app.post('/api/comments', requireAuth, handlePostComment);
 app.patch('/api/comments/:id/resolve', requireAuth, handleResolveComment);
+app.get('/api/sessions/:id/info', requireAuth, handleSessionInfo);
 
 // Static assets
 app.get('/assets/:file', handleAsset);

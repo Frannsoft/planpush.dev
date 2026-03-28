@@ -55,4 +55,7 @@ Server runs on port 3000. Requires `.env` (see `.env.example`).
 - `req.planpushBaseUrl` middleware computes base URL once per request
 - Shared `BASE_PAGE_CSS` constant for consistent design tokens across all HTML pages
 - Comment overlay CSS/JS pre-computed at module load; only nonce + data attributes vary per request
+- Info panel (History/Info/Activity) follows same pre-computed pattern as comment overlay
 - Plan version snapshots stored with 90-day TTL
+- `session_versions` table tracks per-push metadata (who pushed, when, which version)
+- Old plan versions viewable at `/p/{id}?v=N`; version banner shown when viewing non-latest

@@ -47,7 +47,7 @@ export async function handlePush(req, res) {
     sessionId = existingSessionId;
     sessionTitle = session.title;
 
-    // Atomic version increment + read inside transaction
+    // Atomic version increment + record version history inside transaction
     currentVersion = await knex.transaction(async (trx) => {
       await trx('sessions')
         .where('id', sessionId)
@@ -56,6 +56,11 @@ export async function handlePush(req, res) {
           current_version: knex.raw('current_version + 1'),
         });
       const row = await trx('sessions').where('id', sessionId).select('current_version').first();
+      await trx('session_versions').insert({
+        session_id: sessionId,
+        version: row.current_version,
+        pushed_by: tokenData.user_id,
+      });
       return row.current_version;
     });
   } else {
@@ -72,6 +77,13 @@ export async function handlePush(req, res) {
       id: sessionId,
       title: sessionTitle,
       created_by: tokenData.user_id,
+    });
+
+    // Record version 1 in history
+    await knex('session_versions').insert({
+      session_id: sessionId,
+      version: 1,
+      pushed_by: tokenData.user_id,
     });
   }
 
