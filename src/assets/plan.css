@@ -1,0 +1,669 @@
+/* PlanPush — Design Doc Stylesheet */
+
+/* ===== Reset & Base ===== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  color-scheme: light dark;
+
+  /* Surfaces */
+  --pp-bg:        light-dark(#ffffff, #0d1117);
+  --pp-surface-1: light-dark(#f6f8fa, #161b22);
+  --pp-surface-2: light-dark(#eef1f5, #1c2333);
+  --pp-surface-3: light-dark(#e4e8ee, #242d3d);
+
+  /* Text */
+  --pp-text:       light-dark(#1a1d23, #e6edf3);
+  --pp-text-muted: light-dark(#57606a, #8d96a0);
+  --pp-text-faint: light-dark(#8b949e, #484f58);
+
+  /* Accent */
+  --pp-accent:       light-dark(#2563eb, #58a6ff);
+  --pp-accent-soft:  light-dark(#dbeafe, #152238);
+  --pp-accent-hover: light-dark(#1d4ed8, #79c0ff);
+
+  /* Semantic */
+  --pp-success:     light-dark(#16a34a, #3fb950);
+  --pp-success-bg:  light-dark(#dcfce7, #0d2818);
+  --pp-warning:     light-dark(#ca8a04, #d29922);
+  --pp-warning-bg:  light-dark(#fef9c3, #2a2000);
+  --pp-danger:      light-dark(#dc2626, #f85149);
+  --pp-danger-bg:   light-dark(#fee2e2, #300a0a);
+  --pp-info:        light-dark(#2563eb, #58a6ff);
+  --pp-info-bg:     light-dark(#dbeafe, #0d1f3c);
+
+  /* Borders */
+  --pp-border:      light-dark(#d1d9e0, #30363d);
+  --pp-border-bold: light-dark(#bcc3cd, #484f58);
+
+  /* Shadows */
+  --pp-shadow-sm: 0 1px 2px light-dark(rgba(0,0,0,.06), rgba(0,0,0,.3));
+  --pp-shadow-md: 0 4px 12px light-dark(rgba(0,0,0,.08), rgba(0,0,0,.4));
+  --pp-shadow-lg: 0 8px 24px light-dark(rgba(0,0,0,.12), rgba(0,0,0,.5));
+
+  /* Spacing */
+  --pp-gap: 24px;
+  --pp-radius: 8px;
+  --pp-radius-lg: 12px;
+
+  /* Typography */
+  --pp-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --pp-font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+}
+
+html{font-size:16px;-webkit-text-size-adjust:100%}
+
+body{
+  font-family: var(--pp-font);
+  background: var(--pp-bg);
+  color: var(--pp-text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ===== Layout ===== */
+.plan-wrapper{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px var(--pp-gap);
+}
+
+/* ===== Header ===== */
+.plan-header{
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--pp-border);
+}
+.plan-header h1{
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+.plan-meta{
+  font-size: 14px;
+  color: var(--pp-text-muted);
+}
+.plan-meta span+span::before{
+  content: '·';
+  margin: 0 8px;
+}
+
+/* ===== Tabs ===== */
+.plan-tabs{
+  display: flex;
+  gap: 4px;
+  border-bottom: 2px solid var(--pp-border);
+  margin-bottom: var(--pp-gap);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.plan-tabs::-webkit-scrollbar{display:none}
+.plan-tab{
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--pp-text-muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s;
+  font-family: inherit;
+}
+.plan-tab:hover{
+  color: var(--pp-text);
+}
+.plan-tab[aria-selected="true"],
+.plan-tab.active{
+  color: var(--pp-accent);
+  border-bottom-color: var(--pp-accent);
+  font-weight: 600;
+}
+
+/* Tab panes */
+.plan-pane{display:none}
+.plan-pane.active{display:block}
+
+/* ===== Sections ===== */
+.plan-section{
+  margin-bottom: 40px;
+}
+.plan-section:last-child{margin-bottom:0}
+
+.plan-section > h2{
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  letter-spacing: -0.01em;
+}
+.plan-section > h3{
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--pp-text);
+}
+.plan-section > p{
+  margin-bottom: 12px;
+  color: var(--pp-text-muted);
+}
+
+/* ===== Cards ===== */
+.plan-card{
+  background: var(--pp-surface-1);
+  border: 1px solid var(--pp-border);
+  border-radius: var(--pp-radius);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--pp-shadow-sm);
+}
+.plan-card h3,.plan-card h4{
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.plan-card p{
+  font-size: 14px;
+  color: var(--pp-text-muted);
+  margin-bottom: 8px;
+}
+.plan-card p:last-child{margin-bottom:0}
+
+/* Clickable card header with icon */
+.plan-card-title{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.plan-card-icon{
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  background: var(--pp-accent-soft);
+  color: var(--pp-accent);
+  flex-shrink: 0;
+}
+
+/* ===== Grid layouts ===== */
+.plan-grid{
+  display: grid;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.plan-grid-2{grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))}
+.plan-grid-3{grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))}
+.plan-grid-4{grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))}
+
+.plan-columns{
+  display: flex;
+  gap: var(--pp-gap);
+  flex-wrap: wrap;
+}
+.plan-columns > *{flex:1;min-width:280px}
+
+/* ===== Component / Architecture boxes ===== */
+.plan-component{
+  background: var(--pp-surface-1);
+  border: 1px solid var(--pp-border);
+  border-radius: var(--pp-radius);
+  padding: 20px;
+  box-shadow: var(--pp-shadow-sm);
+  transition: box-shadow .15s;
+}
+.plan-component:hover{box-shadow: var(--pp-shadow-md)}
+.plan-component h4{
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.plan-component p{
+  font-size: 13px;
+  color: var(--pp-text-muted);
+  line-height: 1.5;
+}
+
+/* ===== Entity / Data Model ===== */
+.plan-entity{
+  background: var(--pp-surface-1);
+  border: 1px solid var(--pp-border);
+  border-radius: var(--pp-radius);
+  overflow: hidden;
+  box-shadow: var(--pp-shadow-sm);
+}
+.plan-entity-header{
+  background: var(--pp-surface-2);
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 15px;
+  border-bottom: 1px solid var(--pp-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.plan-entity-body{padding: 12px 16px}
+.plan-entity-field{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  font-size: 13px;
+  border-bottom: 1px solid var(--pp-border);
+}
+.plan-entity-field:last-child{border-bottom:none}
+.plan-entity-field .field-name{
+  font-family: var(--pp-font-mono);
+  font-weight: 500;
+  color: var(--pp-text);
+}
+.plan-entity-field .field-type{
+  font-family: var(--pp-font-mono);
+  font-size: 12px;
+  color: var(--pp-accent);
+  background: var(--pp-accent-soft);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.plan-entity-field .field-pk{
+  color: var(--pp-warning);
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 6px;
+}
+.plan-entity-field .field-fk{
+  color: var(--pp-info);
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+/* ===== Flow / Sequence diagrams ===== */
+.plan-flow{
+  background: var(--pp-surface-1);
+  border: 1px solid var(--pp-border);
+  border-radius: var(--pp-radius);
+  padding: 24px;
+  box-shadow: var(--pp-shadow-sm);
+}
+.plan-flow h4{
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.plan-flow-steps{
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.plan-flow-step{
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  position: relative;
+  padding-bottom: 20px;
+}
+.plan-flow-step:last-child{padding-bottom:0}
+.plan-flow-step::before{
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 32px;
+  bottom: 0;
+  width: 2px;
+  background: var(--pp-border);
+}
+.plan-flow-step:last-child::before{display:none}
+.plan-flow-num{
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--pp-accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.plan-flow-content{
+  flex: 1;
+  padding-top: 4px;
+}
+.plan-flow-content strong{
+  font-size: 14px;
+  display: block;
+  margin-bottom: 4px;
+}
+.plan-flow-content p,.plan-flow-content span{
+  font-size: 13px;
+  color: var(--pp-text-muted);
+}
+
+/* Horizontal flow (arrow-based) */
+.plan-flow-horizontal{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+}
+.plan-flow-box{
+  background: var(--pp-surface-2);
+  border: 1px solid var(--pp-border);
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  min-width: 100px;
+}
+.plan-flow-arrow{
+  color: var(--pp-text-faint);
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ===== Decision entries ===== */
+.plan-decision{
+  background: var(--pp-surface-1);
+  border: 1px solid var(--pp-border);
+  border-left: 4px solid var(--pp-accent);
+  border-radius: 0 var(--pp-radius) var(--pp-radius) 0;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  box-shadow: var(--pp-shadow-sm);
+}
+.plan-decision h4{
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.plan-decision p{
+  font-size: 13px;
+  color: var(--pp-text-muted);
+  line-height: 1.5;
+}
+.plan-decision .decision-status{
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.plan-decision .decision-status.decided{
+  background: var(--pp-success-bg);
+  color: var(--pp-success);
+}
+.plan-decision .decision-status.open{
+  background: var(--pp-warning-bg);
+  color: var(--pp-warning);
+}
+
+/* ===== Tier cards ===== */
+.plan-tier{
+  background: var(--pp-surface-1);
+  border: 1px solid var(--pp-border);
+  border-radius: var(--pp-radius-lg);
+  padding: 24px;
+  box-shadow: var(--pp-shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+.plan-tier h4{
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.plan-tier .tier-price{
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--pp-accent);
+}
+.plan-tier .tier-price span{
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--pp-text-muted);
+}
+.plan-tier ul{
+  list-style: none;
+  margin-bottom: 20px;
+  flex:1;
+}
+.plan-tier ul li{
+  font-size: 14px;
+  padding: 6px 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.plan-tier ul li::before{
+  content: '\2713';
+  color: var(--pp-success);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ===== Mockup container ===== */
+.plan-mockup{
+  background: var(--pp-surface-1);
+  border: 1px solid var(--pp-border);
+  border-radius: var(--pp-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--pp-shadow-md);
+  margin-bottom: 16px;
+}
+.plan-mockup-bar{
+  background: var(--pp-surface-3);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--pp-border);
+}
+.plan-mockup-dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--pp-border-bold);
+}
+.plan-mockup-dot:nth-child(1){background: #ff5f57}
+.plan-mockup-dot:nth-child(2){background: #febc2e}
+.plan-mockup-dot:nth-child(3){background: #28c840}
+.plan-mockup-url{
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  color: var(--pp-text-faint);
+  font-family: var(--pp-font-mono);
+}
+.plan-mockup-body{
+  padding: 20px;
+  min-height: 200px;
+}
+
+/* ===== Integration blocks ===== */
+.plan-integration{
+  background: var(--pp-surface-1);
+  border: 1px solid var(--pp-border);
+  border-radius: var(--pp-radius);
+  padding: 20px;
+  box-shadow: var(--pp-shadow-sm);
+}
+.plan-integration h4{
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== Tables ===== */
+.plan-table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.plan-table th{
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--pp-surface-2);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--pp-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--pp-border);
+}
+.plan-table td{
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--pp-border);
+  vertical-align: top;
+}
+.plan-table tr:last-child td{border-bottom:none}
+.plan-table tbody tr:hover{background: var(--pp-surface-1)}
+.plan-table code{
+  font-family: var(--pp-font-mono);
+  font-size: 12px;
+  background: var(--pp-surface-2);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* ===== Code blocks ===== */
+.plan-code{
+  background: var(--pp-surface-2);
+  border: 1px solid var(--pp-border);
+  border-radius: var(--pp-radius);
+  padding: 16px;
+  overflow-x: auto;
+  font-family: var(--pp-font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.plan-code code{
+  font-family: inherit;
+  background: none;
+  padding: 0;
+}
+code{
+  font-family: var(--pp-font-mono);
+  font-size: 0.875em;
+  background: var(--pp-surface-2);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* ===== Notes / Callouts ===== */
+.plan-note{
+  border-radius: var(--pp-radius);
+  padding: 14px 18px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.plan-note-icon{flex-shrink:0;font-size:16px}
+.plan-note-info{background: var(--pp-info-bg); border: 1px solid var(--pp-info); color: var(--pp-text)}
+.plan-note-warning{background: var(--pp-warning-bg); border: 1px solid var(--pp-warning); color: var(--pp-text)}
+.plan-note-success{background: var(--pp-success-bg); border: 1px solid var(--pp-success); color: var(--pp-text)}
+.plan-note-danger{background: var(--pp-danger-bg); border: 1px solid var(--pp-danger); color: var(--pp-text)}
+
+/* ===== Badges / Status pills ===== */
+.plan-badge{
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.plan-badge-accent{background: var(--pp-accent-soft); color: var(--pp-accent)}
+.plan-badge-success{background: var(--pp-success-bg); color: var(--pp-success)}
+.plan-badge-warning{background: var(--pp-warning-bg); color: var(--pp-warning)}
+.plan-badge-danger{background: var(--pp-danger-bg); color: var(--pp-danger)}
+
+/* ===== Lists ===== */
+.plan-list{
+  list-style: none;
+  margin-bottom: 16px;
+}
+.plan-list li{
+  padding: 8px 0;
+  font-size: 14px;
+  border-bottom: 1px solid var(--pp-border);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.plan-list li:last-child{border-bottom:none}
+.plan-list li::before{
+  content: '\203A';
+  color: var(--pp-accent);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* Checklist variant */
+.plan-checklist li::before{content:'\2610'; color: var(--pp-text-faint)}
+.plan-checklist li.checked::before{content:'\2611'; color: var(--pp-success)}
+
+/* ===== Separator ===== */
+.plan-divider{
+  border: none;
+  border-top: 1px solid var(--pp-border);
+  margin: 32px 0;
+}
+
+/* ===== Utility ===== */
+.text-muted{color: var(--pp-text-muted)}
+.text-accent{color: var(--pp-accent)}
+.text-success{color: var(--pp-success)}
+.text-warning{color: var(--pp-warning)}
+.text-danger{color: var(--pp-danger)}
+.text-mono{font-family: var(--pp-font-mono)}
+.text-sm{font-size: 13px}
+.text-xs{font-size: 11px}
+.font-bold{font-weight: 700}
+.mt-0{margin-top:0}.mt-1{margin-top:8px}.mt-2{margin-top:16px}.mt-3{margin-top:24px}
+.mb-0{margin-bottom:0}.mb-1{margin-bottom:8px}.mb-2{margin-bottom:16px}.mb-3{margin-bottom:24px}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  :root{--pp-gap: 16px}
+  .plan-wrapper{padding: 20px 16px}
+  .plan-header h1{font-size: 22px}
+  .plan-grid-2,.plan-grid-3,.plan-grid-4{grid-template-columns: 1fr}
+  .plan-columns{flex-direction: column}
+  .plan-columns > *{min-width: 0}
+  .plan-flow-horizontal{flex-direction: column; align-items: stretch}
+  .plan-flow-arrow{transform: rotate(90deg); text-align: center}
+  .plan-table{font-size: 13px}
+  .plan-table th,.plan-table td{padding: 8px 10px}
+  .plan-mockup-body{padding: 12px}
+}
+
+@media (max-width: 480px) {
+  .plan-tab{padding: 8px 12px; font-size: 13px}
+  .plan-card{padding: 16px}
+  .plan-flow{padding: 16px}
+}

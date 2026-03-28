@@ -1,0 +1,16 @@
+{
+  "name": "planpush-community",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.9.1",
+    "cheerio": "^1.0.0",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0"
+  }
+}
