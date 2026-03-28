@@ -108,6 +108,10 @@ function dashboardPage(sessions, members, baseUrl, tokenData, isAdmin) {
     --accent: #0969da; --accent-bg: #dbeafe;
     --success: #1a7f37; --success-bg: #dafbe1;
     --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    /* Aliases for shared header (uses --pp-* from plan.css) */
+    --pp-bg: var(--bg); --pp-surface-1: var(--bg2); --pp-border: var(--border);
+    --pp-text: var(--text); --pp-text-muted: var(--muted); --pp-accent: var(--accent);
+    --pp-accent-soft: var(--accent-bg); --pp-success: var(--success);
   }
   @media (prefers-color-scheme: dark) {
     :root {

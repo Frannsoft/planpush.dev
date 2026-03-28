@@ -53,6 +53,7 @@ app.patch('/api/comments/:id/resolve', requireAuth, handleResolveComment);
 
 // Static assets
 app.get('/assets/:file', handleAsset);
+app.get('/favicon.ico', (req, res) => { req.params = { file: 'favicon.ico' }; handleAsset(req, res); });
 
 // Dashboard (redirect to login if not authed)
 app.get('/dashboard', handleDashboard);

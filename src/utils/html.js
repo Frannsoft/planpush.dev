@@ -37,32 +37,35 @@ export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardL
     </a>` : '';
 
   return `
-  <div id="pp-header-left">
-    <a id="pp-header-logo" href="${escHtml(apiOrigin || '')}/dashboard">
-      <img src="data:image/png;base64,${LOGO_B64}" alt="PlanPush" width="22" height="22" style="flex-shrink:0">
-      PlanPush
-    </a>
-  </div>
-  <div id="pp-header-right">
-    <span id="pp-header-user">${userName}</span>
-    ${dashboardLink}
-    <button id="pp-logout-btn" class="pp-header-btn" title="Sign out">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-    </button>
+  <div id="pp-header-inner">
+    <div id="pp-header-left">
+      <a id="pp-header-logo" href="${escHtml(apiOrigin || '')}/dashboard">
+        <img src="/assets/logo.png" alt="PlanPush" width="22" height="22" style="flex-shrink:0">
+        PlanPush
+      </a>
+    </div>
+    <div id="pp-header-right">
+      <span id="pp-header-user">${userName}</span>
+      ${dashboardLink}
+      <button id="pp-logout-btn" class="pp-header-btn" title="Sign out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
   </div>`;
 }
 
 // Shared header CSS (used by both dashboard and overlay)
 export const HEADER_CSS = `
-#pp-header{position:fixed;top:0;left:0;right:0;height:44px;background:var(--bg,#fff);border-bottom:1px solid var(--border,#d0d7de);z-index:100001;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;color:var(--text,#1a1d23);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+#pp-header{position:fixed;top:0;left:0;right:0;height:44px;background:var(--pp-bg,#fff);border-bottom:1px solid var(--pp-border,#d0d7de);z-index:100001;padding:0 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;color:var(--pp-text,#1a1d23);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+#pp-header-inner{max-width:1100px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 24px}
 @media(prefers-color-scheme:dark){#pp-header{box-shadow:0 1px 3px rgba(0,0,0,.3)}}
 #pp-header-left{display:flex;align-items:center;gap:10px}
-#pp-header-logo{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;color:var(--text,#1a1d23);text-decoration:none}
+#pp-header-logo{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;color:var(--pp-text,#1a1d23);text-decoration:none}
 #pp-header-logo:hover{opacity:.8}
 #pp-header-right{display:flex;align-items:center;gap:12px}
-#pp-header-user{font-size:12px;color:var(--muted,#57606a)}
-.pp-header-btn{display:flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;color:var(--muted,#57606a);font-size:12px;font-family:inherit;padding:4px 8px;border-radius:4px;text-decoration:none}
-.pp-header-btn:hover{background:var(--bg-alt,#f6f8fa);color:var(--text,#1a1d23)}
+#pp-header-user{font-size:12px;color:var(--pp-text-muted,#57606a)}
+.pp-header-btn{display:flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;color:var(--pp-text-muted,#57606a);font-size:12px;font-family:inherit;padding:4px 8px;border-radius:4px;text-decoration:none}
+.pp-header-btn:hover{background:var(--pp-surface-1,#f6f8fa);color:var(--pp-text,#1a1d23)}
 .pp-header-btn svg{width:16px;height:16px;flex-shrink:0}`;
 
 // Logout JS — posts to /auth/logout then redirects
