@@ -1,63 +1,90 @@
-import Database from 'better-sqlite3';
-import { readFileSync, readdirSync, mkdirSync, existsSync } from 'fs';
+import knexLib from 'knex';
+import { existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = process.env.DATA_DIR || './data';
 
-if (!existsSync(DATA_DIR)) {
-  mkdirSync(DATA_DIR, { recursive: true });
-}
+function buildKnexConfig() {
+  if (process.env.DATABASE_URL) {
+    return {
+      client: 'pg',
+      connection: process.env.DATABASE_URL,
+      pool: { min: 2, max: 10 },
+      migrations: { directory: join(__dirname, 'migrations') },
+    };
+  }
 
-const DB_PATH = join(DATA_DIR, 'planpush.db');
-const rawDb = new Database(DB_PATH);
-rawDb.pragma('journal_mode = WAL');
-rawDb.pragma('foreign_keys = ON');
+  const DATA_DIR = process.env.DATA_DIR || './data';
+  if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
-// Run migrations from src/migrations/
-const migrationsDir = join(__dirname, 'migrations');
-rawDb.exec(`CREATE TABLE IF NOT EXISTS _migrations (name TEXT PRIMARY KEY, applied_at TEXT)`);
-const applied = new Set(rawDb.prepare('SELECT name FROM _migrations').all().map(r => r.name));
-const files = readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
-
-for (const file of files) {
-  if (applied.has(file)) continue;
-  const sql = readFileSync(join(migrationsDir, file), 'utf-8');
-  rawDb.exec(sql);
-  rawDb.prepare("INSERT INTO _migrations VALUES (?, datetime('now'))").run(file);
-  console.log(`[db] applied migration: ${file}`);
-}
-
-// D1-compatible shim: exposes .prepare(sql).bind(...).first()/.all()/.run()
-function createShim(rawDb) {
   return {
-    prepare(sql) {
-      let params = [];
-      return {
-        bind(...args) {
-          params = args;
-          return this;
-        },
-        first() {
-          return Promise.resolve(rawDb.prepare(sql).get(...params) ?? null);
-        },
-        all() {
-          return Promise.resolve({ results: rawDb.prepare(sql).all(...params) });
-        },
-        run() {
-          return Promise.resolve(rawDb.prepare(sql).run(...params));
-        },
-      };
+    client: 'better-sqlite3',
+    connection: { filename: join(DATA_DIR, 'planpush.db') },
+    useNullAsDefault: true,
+    pool: {
+      afterCreate(conn, done) {
+        conn.pragma('journal_mode = WAL');
+        conn.pragma('foreign_keys = ON');
+        done(null, conn);
+      },
     },
-    // Run a function inside an IMMEDIATE transaction (serialized writes)
-    transaction(fn) {
-      const txn = rawDb.transaction(fn);
-      return (...args) => Promise.resolve(txn(...args));
-    },
-    // Direct access for transaction internals
-    _raw: rawDb,
+    migrations: { directory: join(__dirname, 'migrations') },
   };
 }
 
-export const db = createShim(rawDb);
+export const knex = knexLib(buildKnexConfig());
+
+const isPg = knex.client.config.client === 'pg';
+
+// Normalize SQLite-specific SQL for PostgreSQL
+function normalizeSql(sql) {
+  if (!isPg) return sql;
+  return sql.replace(/datetime\('now'\)/gi, 'NOW()');
+}
+
+// Run migrations at startup
+await knex.migrate.latest();
+console.log('[db] migrations up to date');
+
+// Extract rows array from knex.raw() result (different shape per dialect)
+function extractRows(result) {
+  if (Array.isArray(result)) return result;
+  if (result?.rows != null) return result.rows;           // pg
+  if (result?.response != null) return result.response;   // better-sqlite3 via knex
+  return [];
+}
+
+// D1-compatible adapter — preserves .prepare().bind().first()/all()/run() interface
+function createDbAdapter(knex) {
+  return {
+    prepare(sql) {
+      const normalized = normalizeSql(sql);
+      let params = [];
+      const stmt = {
+        bind(...args) {
+          params = args;
+          return stmt;
+        },
+        async first() {
+          const result = await knex.raw(normalized, params);
+          const rows = extractRows(result);
+          return rows[0] ?? null;
+        },
+        async all() {
+          const result = await knex.raw(normalized, params);
+          return { results: extractRows(result) };
+        },
+        async run() {
+          await knex.raw(normalized, params);
+        },
+      };
+      return stmt;
+    },
+
+    // Expose knex instance for transactions and query builder usage
+    _knex: knex,
+  };
+}
+
+export const db = createDbAdapter(knex);

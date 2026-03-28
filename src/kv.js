@@ -1,73 +1,38 @@
-import { createHash } from 'crypto';
-import { readFile, writeFile, unlink, readdir, mkdirSync, existsSync } from 'fs';
-import { readFile as readFileAsync, writeFile as writeFileAsync, unlink as unlinkAsync, readdir as readdirAsync } from 'fs/promises';
-import { join } from 'path';
+import { knex } from './db.js';
 
-export class FileKv {
-  constructor(dir) {
-    this.dir = dir;
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-  }
-
-  _hash(key) {
-    return createHash('sha256').update(key).digest('hex');
-  }
-
+export class DbKv {
   async get(key, type = 'text') {
-    const hash = this._hash(key);
-    const metaPath = join(this.dir, hash + '.meta');
-    const valPath = join(this.dir, hash + '.val');
-    try {
-      const meta = JSON.parse(await readFileAsync(metaPath, 'utf-8'));
-      if (meta.expires_at && new Date(meta.expires_at) < new Date()) {
-        await unlinkAsync(metaPath).catch(() => {});
-        await unlinkAsync(valPath).catch(() => {});
-        return null;
-      }
-      const raw = await readFileAsync(valPath, 'utf-8');
-      return type === 'json' ? JSON.parse(raw) : raw;
-    } catch {
+    const row = await knex('kv_store').where({ key }).first();
+    if (!row) return null;
+    if (row.expires_at && new Date(row.expires_at) < new Date()) {
+      await knex('kv_store').where({ key }).delete();
       return null;
     }
+    return type === 'json' ? JSON.parse(row.value) : row.value;
   }
 
   async put(key, value, opts = {}) {
-    const hash = this._hash(key);
     const expires_at = opts.expirationTtl
       ? new Date(Date.now() + opts.expirationTtl * 1000).toISOString()
       : null;
     const str = typeof value === 'string' ? value : JSON.stringify(value);
-    await writeFileAsync(join(this.dir, hash + '.val'), str);
-    await writeFileAsync(join(this.dir, hash + '.meta'), JSON.stringify({ expires_at, key }));
+    await knex('kv_store')
+      .insert({ key, value: str, expires_at })
+      .onConflict('key')
+      .merge({ value: str, expires_at });
   }
 
   async delete(key) {
-    const hash = this._hash(key);
-    await unlinkAsync(join(this.dir, hash + '.meta')).catch(() => {});
-    await unlinkAsync(join(this.dir, hash + '.val')).catch(() => {});
+    await knex('kv_store').where({ key }).delete();
   }
 
   async cleanup() {
-    try {
-      const files = await readdirAsync(this.dir);
-      const metaFiles = files.filter(f => f.endsWith('.meta'));
-      let cleaned = 0;
-      for (const metaFile of metaFiles) {
-        try {
-          const meta = JSON.parse(await readFileAsync(join(this.dir, metaFile), 'utf-8'));
-          if (meta.expires_at && new Date(meta.expires_at) < new Date()) {
-            const base = metaFile.replace('.meta', '');
-            await unlinkAsync(join(this.dir, metaFile)).catch(() => {});
-            await unlinkAsync(join(this.dir, base + '.val')).catch(() => {});
-            cleaned++;
-          }
-        } catch {
-          // skip corrupt entries
-        }
-      }
-      if (cleaned > 0) console.log(`[kv] cleaned ${cleaned} expired entries`);
-    } catch {
-      // kv dir may not exist yet
-    }
+    const now = new Date().toISOString();
+    const result = await knex('kv_store')
+      .whereNotNull('expires_at')
+      .where('expires_at', '<', now)
+      .delete();
+    const deleted = typeof result === 'object' ? (result?.changes ?? 0) : result;
+    if (deleted > 0) console.log(`[kv] cleaned ${deleted} expired entries`);
   }
 }

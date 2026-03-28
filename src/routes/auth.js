@@ -123,15 +123,20 @@ export async function handleCallback(req, res) {
     // Atomic first-user-becomes-admin: transaction prevents race where two simultaneous
     // signups both see count=0 and both get admin
     userId = crypto.randomUUID();
-    const insertUser = db.transaction((uid, ghId, ghUsername, dName, avUrl) => {
-      const { c } = db._raw.prepare('SELECT COUNT(*) as c FROM users').get();
+    role = await db._knex.transaction({ isolationLevel: 'serializable' }, async (trx) => {
+      const countRow = await trx('users').count('id as c').first();
+      const c = parseInt(countRow.c, 10);
       const r = c === 0 ? 'admin' : 'member';
-      db._raw.prepare(
-        `INSERT INTO users (id, github_user_id, github_username, display_name, avatar_url, role) VALUES (?, ?, ?, ?, ?, ?)`
-      ).run(uid, ghId, ghUsername, dName, avUrl, r);
+      await trx('users').insert({
+        id: userId,
+        github_user_id: githubUserId,
+        github_username: githubUsername,
+        display_name: displayName,
+        avatar_url: avatarUrl,
+        role: r,
+      });
       return r;
     });
-    role = await insertUser(userId, githubUserId, githubUsername, displayName, avatarUrl);
   }
 
   // Set session cookie

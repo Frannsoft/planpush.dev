@@ -4,7 +4,7 @@ Self-hosted design doc collaboration server + Claude Code plugin marketplace.
 
 ## Project Structure
 
-- `src/` — Express.js server (Node 22+, SQLite, file-based KV store)
+- `src/` — Express.js server (Node 22+, Knex.js for SQLite/PostgreSQL)
 - `plugins/` — Claude Code plugin marketplace
 - `.claude-plugin/marketplace.json` — marketplace manifest
 
@@ -24,6 +24,16 @@ npm run dev
 ```
 
 Server runs on port 3000. Requires `.env` (see `.env.example`).
+
+## Database
+
+- Uses **Knex.js** with a D1-compatible adapter shim (`.prepare().bind().first()/all()/run()`)
+- Default: SQLite via `better-sqlite3` (zero-config)
+- PostgreSQL: set `DATABASE_URL=postgres://...` in `.env`
+- KV store is database-backed (`kv_store` table), not filesystem
+- Migrations: JS files in `src/migrations/`, auto-run at startup via `knex.migrate.latest()`
+- `normalizeSql()` in `db.js` auto-translates `datetime('now')` → `NOW()` for PG
+- `extractRows()` in `db.js` handles different `knex.raw()` result shapes per dialect
 
 ## Key Patterns
 

@@ -1,7 +1,7 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import { db } from './db.js';
-import { FileKv } from './kv.js';
+import { DbKv } from './kv.js';
 import { requireAuth, requireAuthOrRedirect, requireAdmin } from './middleware/auth.js';
 import { handleLogin, handleCallback, handleLogout, handleAuthDevice, handleAuthDeviceToken, handleAuthToken, handleActivateGet, handleActivatePost, handleInfo, handleSessionCheck } from './routes/auth.js';
 import { handlePush } from './routes/push.js';
@@ -17,9 +17,8 @@ if (!process.env.GITHUB_CLIENT_SECRET) throw new Error('GITHUB_CLIENT_SECRET env
 
 const app = express();
 
-// KV store
-const DATA_DIR = process.env.DATA_DIR || './data';
-const kv = new FileKv(`${DATA_DIR}/kv`);
+// KV store (backed by database — works with both SQLite and PostgreSQL)
+const kv = new DbKv();
 app.locals.db = db;
 app.locals.kv = kv;
 
