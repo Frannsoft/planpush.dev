@@ -10,6 +10,11 @@ import { handleGetComments, handlePostComment, handleResolveComment } from './ro
 import { handleDashboard } from './routes/dashboard.js';
 import { handleAsset } from './routes/assets.js';
 
+// Validate required env vars at startup
+if (!process.env.SECRET_KEY) throw new Error('SECRET_KEY environment variable is required');
+if (!process.env.GITHUB_CLIENT_ID) throw new Error('GITHUB_CLIENT_ID environment variable is required');
+if (!process.env.GITHUB_CLIENT_SECRET) throw new Error('GITHUB_CLIENT_SECRET environment variable is required');
+
 const app = express();
 
 // KV store

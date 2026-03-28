@@ -249,7 +249,7 @@ function buildSidebar({ sessionId, currentUserId, displayName, apiOrigin, curren
       if (c.anchor && !c.resolved) counts[c.anchor] = (counts[c.anchor] || 0) + 1;
     }
     for (var anchor in counts) {
-      var el = document.querySelector('[data-anchor="' + anchor + '"]');
+      var el = document.querySelector('[data-anchor="' + CSS.escape(anchor) + '"]');
       if (!el) continue;
       var pos = getComputedStyle(el).position;
       if (pos === 'static') el.style.position = 'relative';
@@ -364,13 +364,13 @@ function buildSidebar({ sessionId, currentUserId, displayName, apiOrigin, curren
 
   function scrollToAnchor(anchorId) {
     setTimeout(function() {
-      var targetEl = document.querySelector('[data-anchor="' + anchorId + '"]');
+      var targetEl = document.querySelector('[data-anchor="' + CSS.escape(anchorId) + '"]');
       if (!targetEl) return;
       var pane = targetEl.closest('.plan-pane');
       if (pane && !pane.classList.contains('active')) {
         var paneName = pane.getAttribute('data-pane');
         if (paneName) {
-          var tab = document.querySelector('.plan-tab[data-tab="' + paneName + '"]');
+          var tab = document.querySelector('.plan-tab[data-tab="' + CSS.escape(paneName) + '"]');
           if (tab) tab.click();
         }
       }

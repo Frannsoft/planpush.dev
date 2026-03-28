@@ -37,8 +37,8 @@ export class FileKv {
       ? new Date(Date.now() + opts.expirationTtl * 1000).toISOString()
       : null;
     const str = typeof value === 'string' ? value : JSON.stringify(value);
-    await writeFileAsync(join(this.dir, hash + '.meta'), JSON.stringify({ expires_at, key }));
     await writeFileAsync(join(this.dir, hash + '.val'), str);
+    await writeFileAsync(join(this.dir, hash + '.meta'), JSON.stringify({ expires_at, key }));
   }
 
   async delete(key) {

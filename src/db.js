@@ -50,6 +50,13 @@ function createShim(rawDb) {
         },
       };
     },
+    // Run a function inside an IMMEDIATE transaction (serialized writes)
+    transaction(fn) {
+      const txn = rawDb.transaction(fn);
+      return (...args) => Promise.resolve(txn(...args));
+    },
+    // Direct access for transaction internals
+    _raw: rawDb,
   };
 }
 

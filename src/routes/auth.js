@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import {
   generateDeviceCode,
   generateUserCode,
@@ -6,7 +7,7 @@ import {
   hashToken,
 } from '../utils/crypto.js';
 import { escHtml, safeRedirectUrl } from '../utils/html.js';
-import { setSessionCookie, clearSessionCookie, verifyRequest } from '../middleware/auth.js';
+import { setSessionCookie, clearSessionCookie, verifyRequest, signSession, verifySession } from '../middleware/auth.js';
 
 const DEVICE_CODE_EXPIRY_MINUTES = 15;
 const ACCESS_TOKEN_EXPIRY_MINUTES = 60;
@@ -21,8 +22,18 @@ export async function handleLogin(req, res) {
   const redirectTo = req.query.redirect_to || '/dashboard';
   const activate = req.query.activate || '';
 
-  // State param encodes redirect + activate flag, base64url for safety
-  const state = Buffer.from(JSON.stringify({ redirect_to: redirectTo, activate })).toString('base64url');
+  // CSRF nonce in state param, signed with HMAC to prevent forgery
+  const nonce = randomBytes(16).toString('hex');
+  const state = signSession({ redirect_to: redirectTo, activate, nonce });
+
+  // Store nonce in short-lived cookie for verification on callback
+  res.cookie('__oauth_state', nonce, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 10 * 60 * 1000, // 10 minutes
+    path: '/',
+  });
 
   const params = new URLSearchParams({
     client_id: GITHUB_CLIENT_ID(),
@@ -41,11 +52,14 @@ export async function handleCallback(req, res) {
 
   if (!code) return res.status(400).send('Missing authorization code');
 
-  // Parse state
-  let stateData = {};
-  try {
-    stateData = JSON.parse(Buffer.from(state || '', 'base64url').toString());
-  } catch {}
+  // Verify state CSRF nonce
+  const stateData = verifySession(state || '');
+  if (!stateData) return res.status(400).send('Invalid or expired OAuth state');
+  const storedNonce = req.cookies?.['__oauth_state'];
+  if (!storedNonce || storedNonce !== stateData.nonce) {
+    return res.status(400).send('OAuth state mismatch — possible CSRF. Please try again.');
+  }
+  res.clearCookie('__oauth_state', { path: '/' });
 
   // Exchange code for GitHub access token
   const tokenResp = await fetch('https://github.com/login/oauth/access_token', {
@@ -106,14 +120,18 @@ export async function handleCallback(req, res) {
       `UPDATE users SET github_username = ?, display_name = ?, avatar_url = ? WHERE id = ?`
     ).bind(githubUsername, displayName, avatarUrl, userId).run();
   } else {
-    // Check if this is the first user (becomes admin)
-    const { c } = await db.prepare('SELECT COUNT(*) as c FROM users').bind().first();
-    role = c === 0 ? 'admin' : 'member';
+    // Atomic first-user-becomes-admin: transaction prevents race where two simultaneous
+    // signups both see count=0 and both get admin
     userId = crypto.randomUUID();
-
-    await db.prepare(
-      `INSERT INTO users (id, github_user_id, github_username, display_name, avatar_url, role) VALUES (?, ?, ?, ?, ?, ?)`
-    ).bind(userId, githubUserId, githubUsername, displayName, avatarUrl, role).run();
+    const insertUser = db.transaction((uid, ghId, ghUsername, dName, avUrl) => {
+      const { c } = db._raw.prepare('SELECT COUNT(*) as c FROM users').get();
+      const r = c === 0 ? 'admin' : 'member';
+      db._raw.prepare(
+        `INSERT INTO users (id, github_user_id, github_username, display_name, avatar_url, role) VALUES (?, ?, ?, ?, ?, ?)`
+      ).run(uid, ghId, ghUsername, dName, avUrl, r);
+      return r;
+    });
+    role = await insertUser(userId, githubUserId, githubUsername, displayName, avatarUrl);
   }
 
   // Set session cookie

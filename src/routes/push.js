@@ -23,11 +23,16 @@ export async function handlePush(req, res) {
 
   if (existingSessionId) {
     const session = await db.prepare(
-      `SELECT id FROM sessions WHERE id = ?`
+      `SELECT id, created_by FROM sessions WHERE id = ?`
     ).bind(existingSessionId).first();
 
     if (!session) {
       return res.status(404).json({ error: 'session_not_found' });
+    }
+
+    // Only the session creator can update it
+    if (session.created_by !== tokenData.user_id) {
+      return res.status(403).json({ error: 'not_session_owner' });
     }
 
     sessionId = existingSessionId;

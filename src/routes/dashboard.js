@@ -43,7 +43,11 @@ export async function handleDashboard(req, res) {
     members = [];
   }
 
-  res.set('Content-Type', 'text/html; charset=UTF-8').send(
+  res.set({
+    'Content-Type': 'text/html; charset=UTF-8',
+    'X-Frame-Options': 'DENY',
+    'X-Content-Type-Options': 'nosniff',
+  }).send(
     dashboardPage(sessions || [], members || [], baseUrl, tokenData, isAdmin)
   );
 }
