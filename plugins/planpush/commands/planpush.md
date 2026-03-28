@@ -56,11 +56,23 @@ If the response contains `{"error": "invalid_token"}` or any auth error, print:
 
 Then stop.
 
-Store the `access_token` for use in step 6.
+Store the `access_token` for use in step 7.
 
 ---
 
-## 3. Resolve the session name
+## 3. Resolve output directory and session name
+
+Determine the plan output directory:
+
+Run:
+
+  git rev-parse --show-toplevel 2>/dev/null
+
+If this succeeds, use the result as `{repo_root}` and set `{plans_dir}` to `{repo_root}/pushplans`.
+
+If it fails (no git repo), set `{plans_dir}` to `./pushplans` (relative to the current working directory).
+
+Next, resolve the session name.
 
 Run:
 
@@ -79,7 +91,7 @@ If empty, run:
 
 Use the result as `{session-name}`.
 
-The local output file will be: `.claude/pushsync_plans/pushsync_plan_{session-name}.html`
+The local output file will be: `{plans_dir}/pushplan_{session-name}.html`
 
 ---
 
@@ -100,11 +112,11 @@ If the file does not exist or is empty, this is a first push — the server will
 
 Run:
 
-  mkdir -p .claude/pushsync_plans
+  mkdir -p {plans_dir}
 
-Check the project root `.gitignore`. If either of these lines is missing, add them:
+Check the project root `.gitignore` (or create one if it doesn't exist). If either of these lines is missing, add them:
 
-  .claude/pushsync_plans/
+  pushplans/
   .claude/plan-session-*
 
 ---
@@ -115,15 +127,15 @@ Scan the conversation history for the most recent message that contains a prior 
 
 **First push** (no prior URL found):
 - Read the full conversation
-- Generate `.claude/pushsync_plans/pushsync_plan_{session-name}.html` from scratch
+- Generate `{plans_dir}/pushplan_{session-name}.html` from scratch
 
 **Subsequent push** (prior URL found):
-- Read the current `.claude/pushsync_plans/pushsync_plan_{session-name}.html`
+- Read the current `{plans_dir}/pushplan_{session-name}.html`
 - Read only messages after the last push marker
 - Identify what has changed: new components, updated flows, new entities, new UI, resolved questions, new decisions
 - Update only the changed sections — do not regenerate what has not changed
 
-Write `.claude/pushsync_plans/pushsync_plan_{session-name}.html` as a plain HTML file with **no inline `<style>` or `<script>` tags**. The server injects `plan.css` (styling) and `plan.js` (tab switching, anchor scrolling) automatically with CSP nonces.
+Write `{plans_dir}/pushplan_{session-name}.html` as a plain HTML file with **no inline `<style>` or `<script>` tags**. The server injects `plan.css` (styling) and `plan.js` (tab switching, anchor scrolling) automatically with CSP nonces.
 
 **HTML structure:**
 - Standard `<!DOCTYPE html>` with `<meta charset>` and `<meta viewport>`
@@ -183,7 +195,7 @@ Read the HTML file and push it:
   curl -s -X POST {server_url}/api/push \
     -H "Authorization: Bearer {access_token}" \
     -H "Content-Type: text/html" \
-    --data-binary @.claude/pushsync_plans/pushsync_plan_{session-name}.html
+    --data-binary @{plans_dir}/pushplan_{session-name}.html
 
 **Subsequent push** (has `{existing_session_id}`):
 
@@ -191,7 +203,7 @@ Read the HTML file and push it:
     -H "Authorization: Bearer {access_token}" \
     -H "Content-Type: text/html" \
     -H "X-Session-Id: {existing_session_id}" \
-    --data-binary @.claude/pushsync_plans/pushsync_plan_{session-name}.html
+    --data-binary @{plans_dir}/pushplan_{session-name}.html
 
 Expected response: `{"session_id": "...", "url": "{server_url}/p/..."}`
 
@@ -200,7 +212,7 @@ If the push returns 401 (access token expired), retry step 2 to get a new access
 If the push fails (non-200 or error in response body), print:
 
   ✗ Push failed. The design doc was saved locally at:
-    .claude/pushsync_plans/pushsync_plan_{session-name}.html
+    {plans_dir}/pushplan_{session-name}.html
 
 Then stop.
 
@@ -223,5 +235,6 @@ Print:
   ✓ Plan pushed successfully.
 
     URL: {url from response}
+    Local: {plans_dir}/pushplan_{session-name}.html
 
   Share this link with your team. They can view the doc and leave comments.
