@@ -23,12 +23,34 @@ export function safeRedirectUrl(raw, fallback = '/dashboard') {
 
 // Shared design tokens + reset CSS used by all standalone HTML pages
 export const BASE_PAGE_CSS = `
-  :root { --bg: #fff; --text: #1a1d23; --muted: #57606a; --border: #e1e4e8; --accent: #0969da; --accent-bg: #dbeafe; --error: #cf222e; --success: #1a7f37; --success-bg: #dafbe1; }
+  :root {
+    --bg: #fff; --bg2: #f8f9fb; --bg3: #f0f2f5;
+    --text: #1a1d23; --muted: #57606a; --border: #dfe3e8; --border-bold: #c4c9d1;
+    --accent: #2563eb; --accent-hover: #1d4ed8; --accent-bg: #eff4ff;
+    --error: #dc2626; --error-bg: #fef2f2;
+    --success: #16a34a; --success-bg: #f0fdf4;
+    --warning: #ca8a04; --warning-bg: #fefce8;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+    --radius: 8px; --radius-lg: 12px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #0d1117; --text: #e6edf3; --muted: #8d96a0; --border: #30363d; --accent: #58a6ff; --accent-bg: #121d2f; --error: #f85149; --success: #3fb950; --success-bg: #0f2d1b; }
+    :root {
+      --bg: #0d1117; --bg2: #161b22; --bg3: #1c2128;
+      --text: #e6edf3; --muted: #8d96a0; --border: #30363d; --border-bold: #484f58;
+      --accent: #58a6ff; --accent-hover: #79c0ff; --accent-bg: #121d2f;
+      --error: #f85149; --error-bg: #300a0a;
+      --success: #3fb950; --success-bg: #0d2818;
+      --warning: #d29922; --warning-bg: #2a2000;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.2);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.3);
+    }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }`;
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }`;
 
 // Build reusable header bar HTML
 export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardLink = true }) {
@@ -64,17 +86,19 @@ export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardL
 
 // Shared header CSS (used by both dashboard and overlay)
 export const HEADER_CSS = `
-#pp-header{position:fixed;top:0;left:0;right:0;height:44px;background:var(--pp-bg,#fff);border-bottom:1px solid var(--pp-border,#d0d7de);z-index:100001;padding:0 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;color:var(--pp-text,#1a1d23);box-shadow:0 1px 3px rgba(0,0,0,.06)}
-#pp-header-inner{max-width:1100px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 24px}
-@media(prefers-color-scheme:dark){#pp-header{box-shadow:0 1px 3px rgba(0,0,0,.3)}}
+#pp-header{position:fixed;top:0;left:0;right:0;height:48px;background:var(--pp-bg,#fff);border-bottom:1px solid var(--pp-border,#d0d7de);z-index:100001;padding:0 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;color:var(--pp-text,#1a1d23);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);background:color-mix(in srgb, var(--pp-bg,#fff) 85%, transparent)}
+#pp-header-inner{max-width:1100px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+@media(prefers-color-scheme:dark){#pp-header{box-shadow:0 1px 0 rgba(255,255,255,.04)}}
 #pp-header-left{display:flex;align-items:center;gap:10px}
-#pp-header-logo{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px;color:var(--pp-text,#1a1d23);text-decoration:none}
-#pp-header-logo:hover{opacity:.8}
-#pp-header-right{display:flex;align-items:center;gap:12px}
-#pp-header-user{font-size:12px;color:var(--pp-text-muted,#57606a)}
-.pp-header-btn{display:flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;color:var(--pp-text-muted,#57606a);font-size:12px;font-family:inherit;padding:4px 8px;border-radius:4px;text-decoration:none}
+#pp-header-logo{display:flex;align-items:center;gap:7px;font-weight:700;font-size:14px;color:var(--pp-text,#1a1d23);text-decoration:none;letter-spacing:-0.01em;transition:opacity .15s}
+#pp-header-logo:hover{opacity:.7}
+#pp-header-right{display:flex;align-items:center;gap:4px}
+#pp-header-user{font-size:12px;color:var(--pp-text-muted,#57606a);padding:0 8px}
+.pp-header-btn{display:flex;align-items:center;justify-content:center;gap:4px;background:none;border:none;cursor:pointer;color:var(--pp-text-muted,#57606a);font-size:12px;font-family:inherit;padding:0;width:36px;height:36px;border-radius:8px;text-decoration:none;transition:background .15s,color .15s}
 .pp-header-btn:hover{background:var(--pp-surface-1,#f6f8fa);color:var(--pp-text,#1a1d23)}
-.pp-header-btn svg{width:16px;height:16px;flex-shrink:0}`;
+.pp-header-btn:active{transform:scale(.95)}
+.pp-header-btn svg{width:16px;height:16px;flex-shrink:0}
+@media(max-width:600px){#pp-header-user{display:none}.pp-header-btn{width:40px;height:40px}#pp-header-inner{padding:0 8px}}`;
 
 // Logout JS — posts to /auth/logout then redirects
 export const LOGOUT_JS = `

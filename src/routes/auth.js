@@ -340,15 +340,17 @@ function getActivatePage(isSignedIn, displayName) {
 <style>
   ${BASE_PAGE_CSS}
   body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
-  .card { max-width: 400px; width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 32px; text-align: center; }
-  h1 { font-size: 20px; margin-bottom: 8px; }
-  p { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
-  input { width: 100%; padding: 12px; font-size: 20px; text-align: center; letter-spacing: 4px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); margin-bottom: 16px; }
-  input:focus { outline: 2px solid var(--accent); border-color: transparent; }
-  button, .btn { display: inline-block; width: 100%; padding: 12px; font-size: 14px; font-weight: 600; background: var(--accent); color: #fff; border: none; border-radius: 8px; cursor: pointer; text-decoration: none; text-align: center; }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .card { max-width: 400px; width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 36px 32px; text-align: center; box-shadow: var(--shadow-md); }
+  h1 { font-size: 20px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.02em; }
+  p { font-size: 14px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+  input { width: 100%; padding: 14px; font-size: 20px; text-align: center; letter-spacing: 4px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); margin-bottom: 16px; font-family: var(--font-mono); transition: border-color .15s, box-shadow .15s; }
+  input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+  button, .btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px; font-size: 14px; font-weight: 600; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); cursor: pointer; text-decoration: none; text-align: center; min-height: 44px; transition: background .15s, transform .1s; }
+  button:hover, .btn:hover { background: var(--accent-hover); }
+  button:active, .btn:active { transform: scale(.98); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
   .error { color: var(--error); font-size: 13px; margin-bottom: 16px; }
-  .signed-in-as { font-size: 13px; color: var(--success); margin-bottom: 16px; }
+  .signed-in-as { font-size: 13px; color: var(--success); margin-bottom: 16px; font-weight: 500; }
   .gh-icon { width: 20px; height: 20px; vertical-align: middle; margin-right: 8px; fill: #fff; }
 </style>
 </head>
@@ -418,9 +420,9 @@ function getSuccessPage() {
 <style>
   ${BASE_PAGE_CSS}
   body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
-  .card { max-width: 400px; width: 100%; text-align: center; }
-  .check { font-size: 48px; color: var(--success); margin-bottom: 16px; }
-  h1 { font-size: 20px; margin-bottom: 8px; }
+  .card { max-width: 400px; width: 100%; text-align: center; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 40px 32px; box-shadow: var(--shadow-md); }
+  .check { width: 56px; height: 56px; border-radius: 50%; background: var(--success-bg); color: var(--success); display: inline-flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 20px; }
+  h1 { font-size: 20px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.02em; }
   p { font-size: 14px; color: var(--muted); }
 </style>
 </head>
@@ -444,14 +446,16 @@ function getForbiddenPage(orgName) {
 <style>
   ${BASE_PAGE_CSS}
   body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
-  .card { max-width: 400px; width: 100%; text-align: center; border: 1px solid var(--error); border-radius: 12px; padding: 32px; }
-  h1 { font-size: 20px; margin-bottom: 8px; color: var(--error); }
-  p { font-size: 14px; color: var(--muted); }
-  code { background: rgba(127,127,127,.1); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  .card { max-width: 400px; width: 100%; text-align: center; background: var(--bg2); border: 1px solid var(--error); border-radius: var(--radius-lg); padding: 36px 32px; box-shadow: var(--shadow-md); }
+  .icon { width: 56px; height: 56px; border-radius: 50%; background: var(--error-bg); color: var(--error); display: inline-flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 20px; }
+  h1 { font-size: 20px; font-weight: 800; margin-bottom: 8px; color: var(--error); letter-spacing: -0.02em; }
+  p { font-size: 14px; color: var(--muted); line-height: 1.5; }
+  code { background: var(--bg3); padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: var(--font-mono); }
 </style>
 </head>
 <body>
 <div class="card">
+  <div class="icon">&#10007;</div>
   <h1>Access Denied</h1>
   <p>You must be a member of the <code>${escHtml(orgName)}</code> GitHub organization to access this PlanPush instance.</p>
 </div>
