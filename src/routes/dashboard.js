@@ -1,44 +1,42 @@
-import { verifyRequest } from '../middleware/auth.js';
-import { escHtml, buildHeaderHTML, HEADER_CSS, LOGOUT_JS } from '../utils/html.js';
+import { knex } from '../db.js';
+import { escHtml, buildHeaderHTML, HEADER_CSS, LOGOUT_JS, BASE_PAGE_CSS } from '../utils/html.js';
 
 export async function handleDashboard(req, res) {
-  const tokenData = await verifyRequest(req);
-
-  if (!tokenData) {
-    return res.redirect('/auth/login?redirect_to=/dashboard');
-  }
-
-  const db = req.app.locals.db;
+  const tokenData = req.tokenData; // populated by requireAuthOrRedirect middleware
   const isAdmin = tokenData.role === 'admin';
-  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  const baseUrl = req.planpushBaseUrl;
 
   let sessions, members;
 
   if (isAdmin) {
-    ({ results: sessions } = await db.prepare(
-      `SELECT s.id, s.title, s.created_by, s.created_at, s.last_updated,
-              COALESCE(u.display_name, u.github_username, 'Deleted user') as creator,
-              (SELECT COUNT(*) FROM comments c WHERE c.session_id = s.id) as comment_count,
-              (SELECT COUNT(*) FROM comments c WHERE c.session_id = s.id AND c.resolved = 0) as open_comments
-       FROM sessions s
-       LEFT JOIN users u ON s.created_by = u.id
-       ORDER BY s.last_updated DESC`
-    ).bind().all());
+    sessions = await knex('sessions as s')
+      .leftJoin('users as u', 's.created_by', 'u.id')
+      .leftJoin('comments as c', 'c.session_id', 's.id')
+      .select(
+        's.id', 's.title', 's.created_by', 's.created_at', 's.last_updated',
+        knex.raw("COALESCE(u.display_name, u.github_username, 'Deleted user') as creator"),
+        knex.raw('COALESCE(COUNT(c.id), 0) as comment_count'),
+        knex.raw('COALESCE(SUM(CASE WHEN c.resolved = 0 THEN 1 ELSE 0 END), 0) as open_comments'),
+      )
+      .groupBy('s.id', 's.title', 's.created_by', 's.created_at', 's.last_updated', 'u.display_name', 'u.github_username')
+      .orderBy('s.last_updated', 'desc');
 
-    ({ results: members } = await db.prepare(
-      `SELECT id, github_username, display_name, avatar_url, role, joined_at FROM users`
-    ).bind().all());
+    members = await knex('users')
+      .select('id', 'github_username', 'display_name', 'avatar_url', 'role', 'joined_at');
   } else {
-    ({ results: sessions } = await db.prepare(
-      `SELECT DISTINCT s.id, s.title, s.created_by, s.created_at, s.last_updated,
-              COALESCE(u.display_name, u.github_username, 'Deleted user') as creator,
-              (SELECT COUNT(*) FROM comments c WHERE c.session_id = s.id AND c.author_id = ?) as comment_count,
-              (SELECT COUNT(*) FROM comments c WHERE c.session_id = s.id AND c.author_id = ? AND c.resolved = 0) as open_comments
-       FROM sessions s
-       LEFT JOIN users u ON s.created_by = u.id
-       WHERE s.id IN (SELECT DISTINCT session_id FROM comments WHERE author_id = ?)
-       ORDER BY s.last_updated DESC`
-    ).bind(tokenData.user_id, tokenData.user_id, tokenData.user_id).all());
+    sessions = await knex('sessions as s')
+      .leftJoin('users as u', 's.created_by', 'u.id')
+      .join('comments as c', function() {
+        this.on('c.session_id', 's.id').andOn('c.author_id', knex.raw('?', [tokenData.user_id]));
+      })
+      .select(
+        's.id', 's.title', 's.created_by', 's.created_at', 's.last_updated',
+        knex.raw("COALESCE(u.display_name, u.github_username, 'Deleted user') as creator"),
+        knex.raw('COALESCE(COUNT(c.id), 0) as comment_count'),
+        knex.raw('COALESCE(SUM(CASE WHEN c.resolved = 0 THEN 1 ELSE 0 END), 0) as open_comments'),
+      )
+      .groupBy('s.id', 's.title', 's.created_by', 's.created_at', 's.last_updated', 'u.display_name', 'u.github_username')
+      .orderBy('s.last_updated', 'desc');
 
     members = [];
   }
@@ -46,7 +44,6 @@ export async function handleDashboard(req, res) {
   res.set({
     'Content-Type': 'text/html; charset=UTF-8',
     'X-Frame-Options': 'DENY',
-    'X-Content-Type-Options': 'nosniff',
   }).send(
     dashboardPage(sessions || [], members || [], baseUrl, tokenData, isAdmin)
   );
@@ -104,28 +101,22 @@ function dashboardPage(sessions, members, baseUrl, tokenData, isAdmin) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PlanPush — Dashboard</title>
 <style>
+  ${BASE_PAGE_CSS}
   :root {
-    --bg: #ffffff; --bg2: #f8f9fa; --bg3: #f0f2f5;
-    --border: #e1e4e8; --text: #1a1d23; --muted: #57606a;
-    --accent: #0969da; --accent-bg: #dbeafe;
-    --success: #1a7f37; --success-bg: #dafbe1;
+    --bg2: #f8f9fa; --bg3: #f0f2f5;
     --shadow: 0 1px 3px rgba(0,0,0,0.08);
-    /* Aliases for shared header (uses --pp-* from plan.css) */
+    /* Aliases for shared header */
     --pp-bg: var(--bg); --pp-surface-1: var(--bg2); --pp-border: var(--border);
     --pp-text: var(--text); --pp-text-muted: var(--muted); --pp-accent: var(--accent);
     --pp-accent-soft: var(--accent-bg); --pp-success: var(--success);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0d1117; --bg2: #161b22; --bg3: #1c2128;
-      --border: #30363d; --text: #e6edf3; --muted: #8d96a0;
-      --accent: #58a6ff; --accent-bg: #121d2f;
-      --success: #3fb950; --success-bg: #0f2d1b;
+      --bg2: #161b22; --bg3: #1c2128;
       --shadow: 0 1px 3px rgba(0,0,0,0.3);
     }
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; padding-top: 44px; }
+  body { min-height: 100vh; display: flex; flex-direction: column; padding-top: 44px; }
 
   ${HEADER_CSS}
   @media(prefers-color-scheme:dark){.pp-header-btn:hover{background:var(--bg3,#1c2128)}}
@@ -180,7 +171,7 @@ function dashboardPage(sessions, members, baseUrl, tokenData, isAdmin) {
       <div class="stat-label">${isAdmin ? 'Sessions' : 'My Sessions'}</div>
     </div>
     <div class="stat">
-      <div class="stat-value">${sessions.reduce((sum, s) => sum + s.open_comments, 0)}</div>
+      <div class="stat-value">${sessions.reduce((sum, s) => sum + (s.open_comments || 0), 0)}</div>
       <div class="stat-label">${isAdmin ? 'Open Comments' : 'My Open Comments'}</div>
     </div>
     ${isAdmin ? `
@@ -235,7 +226,7 @@ function dashboardPage(sessions, members, baseUrl, tokenData, isAdmin) {
   </div>` : ''}
 </main>
 
-<footer>&copy; ${new Date().getFullYear()} PlanPush Community</footer>
+<footer>&copy; ${new Date().getFullYear()} PlanPush</footer>
 
 <script>
 ${LOGOUT_JS}

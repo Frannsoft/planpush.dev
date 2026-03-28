@@ -1,10 +1,12 @@
+import { knex } from '../db.js';
+import { kv } from '../kv.js';
 import { generateSessionId } from '../utils/crypto.js';
 import { notifySlack } from '../utils/slack.js';
 import { sanitizeHtml } from '../utils/sanitize.js';
 
+const VERSION_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
+
 export async function handlePush(req, res) {
-  const db = req.app.locals.db;
-  const kv = req.app.locals.kv;
   const tokenData = req.tokenData;
 
   const rawHtml = req.body;
@@ -28,9 +30,10 @@ export async function handlePush(req, res) {
       return res.status(400).json({ error: 'invalid_session_id' });
     }
 
-    const session = await db.prepare(
-      `SELECT id, title, created_by FROM sessions WHERE id = ?`
-    ).bind(existingSessionId).first();
+    const session = await knex('sessions')
+      .where({ id: existingSessionId })
+      .select('id', 'title', 'created_by')
+      .first();
 
     if (!session) {
       return res.status(404).json({ error: 'session_not_found' });
@@ -45,12 +48,12 @@ export async function handlePush(req, res) {
     sessionTitle = session.title;
 
     // Atomic version increment + read inside transaction
-    currentVersion = await db._knex.transaction(async (trx) => {
+    currentVersion = await knex.transaction(async (trx) => {
       await trx('sessions')
         .where('id', sessionId)
         .update({
-          last_updated: db._knex.fn.now(),
-          current_version: db._knex.raw('current_version + 1'),
+          last_updated: knex.fn.now(),
+          current_version: knex.raw('current_version + 1'),
         });
       const row = await trx('sessions').where('id', sessionId).select('current_version').first();
       return row.current_version;
@@ -65,21 +68,22 @@ export async function handlePush(req, res) {
     const rawTitle = titleMatch ? titleMatch[1].trim().slice(0, 200) : 'Untitled Plan';
     sessionTitle = rawTitle.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 
-    await db.prepare(
-      `INSERT INTO sessions (id, title, created_by) VALUES (?, ?, ?)`
-    ).bind(sessionId, sessionTitle, tokenData.user_id).run();
+    await knex('sessions').insert({
+      id: sessionId,
+      title: sessionTitle,
+      created_by: tokenData.user_id,
+    });
   }
 
-  // Write HTML to KV (current + versioned snapshot)
+  // Write HTML to KV (current + versioned snapshot with 90-day TTL)
   await kv.put(`plan:${sessionId}:current`, html);
 
   // Fire-and-forget versioned snapshot
   setImmediate(() => {
-    kv.put(`plan:${sessionId}:v:${currentVersion}`, html).catch(console.error);
+    kv.put(`plan:${sessionId}:v:${currentVersion}`, html, { expirationTtl: VERSION_TTL_SECONDS }).catch(console.error);
   });
 
-  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-  const planUrl = `${baseUrl}/p/${sessionId}`;
+  const planUrl = `${req.planpushBaseUrl}/p/${sessionId}`;
 
   // Fire-and-forget Slack notification (only on subsequent pushes)
   if (existingSessionId) {

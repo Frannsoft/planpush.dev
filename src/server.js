@@ -1,5 +1,6 @@
-import { app, kv } from './app.js';
+import { app } from './app.js';
 import { knex } from './db.js';
+import { kv } from './kv.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -10,7 +11,7 @@ await kv.cleanup();
 const cleanupInterval = setInterval(() => kv.cleanup().catch(console.error), 30 * 60 * 1000);
 
 const server = app.listen(PORT, () => {
-  console.log(`[server] PlanPush Community listening on port ${PORT}`);
+  console.log(`[server] PlanPush listening on port ${PORT}`);
 });
 
 // Graceful shutdown

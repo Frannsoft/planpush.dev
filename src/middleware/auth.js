@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
+import { kv } from '../kv.js';
 
 const COOKIE_NAME = '__session';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -52,7 +53,7 @@ export async function verifyRequest(req) {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7);
     if (token.startsWith('at_')) {
-      return req.app.locals.kv.get(`access_token:${token}`, 'json');
+      return kv.get(`access_token:${token}`, 'json');
     }
   }
 
@@ -76,14 +77,6 @@ export async function requireAuthOrRedirect(req, res, next) {
     const redirectTo = encodeURIComponent(req.originalUrl || req.path);
     return res.redirect(`/auth/login?redirect_to=${redirectTo}`);
   }
-  req.tokenData = tokenData;
-  next();
-}
-
-export async function requireAdmin(req, res, next) {
-  const tokenData = await verifyRequest(req);
-  if (!tokenData) return res.status(401).json({ error: 'unauthorized' });
-  if (tokenData.role !== 'admin') return res.status(403).json({ error: 'forbidden' });
   req.tokenData = tokenData;
   next();
 }

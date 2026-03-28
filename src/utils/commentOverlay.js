@@ -1,27 +1,11 @@
 // Comment overlay — generates inline HTML/CSS/JS for injection into plan pages
-// Community edition: cookie-based auth (no Clerk), full slide-out sidebar
+// Static parts are pre-computed at module load; only nonce + data attributes vary per request.
 
-import { buildHeaderHTML, HEADER_CSS, LOGOUT_JS, escAttr } from './html.js';
+import { buildHeaderHTML, HEADER_CSS, LOGOUT_JS, escHtml } from './html.js';
 
-export function buildOverlayHTML({ sessionId, currentUserId, displayName, apiOrigin, currentVersion, nonce }) {
-  const header = buildHeaderBar({ currentUserId, displayName, apiOrigin, nonce });
-  return header + buildSidebar({ sessionId, currentUserId, displayName, apiOrigin, currentVersion, nonce });
-}
+// --- Pre-computed static parts ---
 
-function buildHeaderBar({ currentUserId, displayName, apiOrigin, nonce }) {
-  const headerContent = buildHeaderHTML({ displayName, userId: currentUserId, apiOrigin, showDashboardLink: true });
-  return `
-<style>${HEADER_CSS}</style>
-<style>body{padding-top:44px !important}</style>
-<div id="pp-header">
-  ${headerContent}
-</div>
-<script nonce="${escAttr(nonce)}">${LOGOUT_JS}</script>`;
-}
-
-function buildSidebar({ sessionId, currentUserId, displayName, apiOrigin, currentVersion, nonce }) {
-  return `
-<style>
+const SIDEBAR_CSS = `
 #pp-toggle{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:100000;background:var(--pp-accent,#0969da);color:#fff;border:none;border-radius:8px 0 0 8px;padding:12px 6px;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:600;writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:.5px;box-shadow:-2px 0 8px rgba(0,0,0,.15);transition:right .25s ease}
 #pp-toggle:hover{background:var(--pp-accent-hover,#0550ae)}
 #pp-toggle .pp-badge{display:inline-block;background:#fff;color:var(--pp-accent,#0969da);border-radius:10px;padding:1px 6px;font-size:11px;font-weight:700;margin-top:6px;writing-mode:horizontal-tb}
@@ -79,9 +63,9 @@ function buildSidebar({ sessionId, currentUserId, displayName, apiOrigin, curren
 [data-anchor].pp-has-comments.pp-anchor-highlight{outline-width:4px}
 .pp-bubble{position:absolute;top:-14px;right:-14px;background:var(--pp-accent,#0969da);color:#fff;border-radius:20px;padding:6px 14px;font-size:14px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;cursor:pointer;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.25);line-height:1.4;display:flex;align-items:center;gap:6px;white-space:nowrap;transition:transform .15s,box-shadow .15s}
 .pp-bubble:hover{transform:scale(1.12);box-shadow:0 4px 14px rgba(0,0,0,.3)}
-.pp-bubble svg{width:18px;height:18px;flex-shrink:0}
-</style>
+.pp-bubble svg{width:18px;height:18px;flex-shrink:0}`;
 
+const SIDEBAR_HTML = `
 <button id="pp-toggle" title="Comments">Comments<span class="pp-badge" id="pp-badge" style="display:none">0</span></button>
 
 <div id="pp-sidebar">
@@ -104,15 +88,9 @@ function buildSidebar({ sessionId, currentUserId, displayName, apiOrigin, curren
       </div>
     </form>
   </div>
-</div>
+</div>`;
 
-<script nonce="${escAttr(nonce)}" id="pp-overlay-script"
-  data-pp-session="${escAttr(sessionId)}"
-  data-pp-user="${escAttr(currentUserId || '')}"
-  data-pp-display-name="${escAttr(displayName || '')}"
-  data-pp-origin="${escAttr(apiOrigin)}"
-  data-pp-version="${escAttr(String(currentVersion || 1))}">
-(function() {
+const OVERLAY_JS = `(function() {
   var cfg = document.getElementById('pp-overlay-script').dataset;
   var SESSION_ID = cfg.ppSession;
   var CURRENT_USER = cfg.ppUser;
@@ -137,7 +115,6 @@ function buildSidebar({ sessionId, currentUserId, displayName, apiOrigin, curren
   var anchorName = document.getElementById('pp-anchor-name');
   var clearFilter = document.getElementById('pp-anchor-clear');
   var commentsList = document.getElementById('pp-comments-list');
-  var compose = document.getElementById('pp-compose');
   var composeForm = document.getElementById('pp-compose-form');
   var composeInput = document.getElementById('pp-compose-input');
   var composeAnchor = document.getElementById('pp-compose-anchor');
@@ -180,7 +157,6 @@ function buildSidebar({ sessionId, currentUserId, displayName, apiOrigin, curren
     else if (state.open) startPolling();
   });
 
-  // --- API calls (cookie-based auth, no Bearer token needed) ---
   async function fetchComments() {
     try {
       var resp = await fetch(API + '/api/comments?session_id=' + SESSION_ID, {
@@ -308,16 +284,16 @@ function buildSidebar({ sessionId, currentUserId, displayName, apiOrigin, curren
       var outdated = isOutdated(c);
       var resolvedClass = c.resolved ? ' pp-resolved' : '';
       var outdatedClass = outdated ? ' pp-outdated' : '';
-      html += '<div class="pp-comment' + resolvedClass + outdatedClass + '" data-pp-comment-anchor="' + escHtml(c.anchor || '') + '" style="cursor:pointer">';
+      html += '<div class="pp-comment' + resolvedClass + outdatedClass + '" data-pp-comment-anchor="' + escH(c.anchor || '') + '" style="cursor:pointer">';
       html += '<div class="pp-comment-meta">';
-      html += '<span class="pp-comment-author">@' + escHtml(c.author_display_name || c.author_github_id || 'unknown') + '</span>';
+      html += '<span class="pp-comment-author">@' + escH(c.author_display_name || c.author_github_id || 'unknown') + '</span>';
       html += '<span>' + timeAgo(c.created_at) + '</span>';
       if (outdated) html += '<span class="pp-outdated-tag">Outdated</span>';
       if (c.anchor && !state.activeAnchor) {
-        html += ' <span class="pp-comment-anchor" data-pp-goto="' + escHtml(c.anchor) + '">' + escHtml(c.anchor) + '</span>';
+        html += ' <span class="pp-comment-anchor" data-pp-goto="' + escH(c.anchor) + '">' + escH(c.anchor) + '</span>';
       }
       html += '</div>';
-      html += '<div class="pp-comment-body">' + escHtml(c.content) + '</div>';
+      html += '<div class="pp-comment-body">' + escH(c.content) + '</div>';
       html += '<div class="pp-comment-actions">';
       if (c.resolved) {
         html += '<span class="pp-resolved-tag">Resolved</span>';
@@ -403,20 +379,52 @@ function buildSidebar({ sessionId, currentUserId, displayName, apiOrigin, curren
     }
   });
 
-  function escHtml(s) {
+  function escH(s) {
+    if (!s) return '';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
   function timeAgo(iso) {
+    if (!iso) return 'unknown';
     var diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (isNaN(diff)) return 'unknown';
     if (diff < 60) return 'just now';
     if (diff < 3600) return Math.floor(diff/60) + 'm ago';
     if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
     return Math.floor(diff/86400) + 'd ago';
   }
 
-  // Start polling immediately — user is already authenticated (cookie)
   startPolling();
-})();
-</script>`;
+})();`;
+
+// Pre-compute the static header parts (HEADER_CSS + body padding + LOGOUT_JS + sidebar CSS + sidebar HTML)
+// Only the nonce and header content (which has per-user display name) are dynamic.
+const STATIC_HEADER_STYLE = `<style>${HEADER_CSS}</style>\n<style>body{padding-top:44px !important}</style>`;
+const STATIC_SIDEBAR_STYLE = `<style>${SIDEBAR_CSS}</style>`;
+const STATIC_SIDEBAR_HTML_AND_JS_PREFIX = SIDEBAR_HTML + `\n<script nonce="`;
+const STATIC_JS_SUFFIX = `>${OVERLAY_JS}\n</script>`;
+
+// --- Public API ---
+
+export function buildOverlayHTML({ sessionId, currentUserId, displayName, apiOrigin, currentVersion, nonce }) {
+  const headerContent = buildHeaderHTML({ displayName, userId: currentUserId, apiOrigin, showDashboardLink: true });
+
+  // Header bar (per-request: nonce + user-specific header content)
+  const headerBar = STATIC_HEADER_STYLE
+    + `\n<div id="pp-header">\n  ${headerContent}\n</div>`
+    + `\n<script nonce="${escHtml(nonce)}">${LOGOUT_JS}</script>`;
+
+  // Sidebar (per-request: nonce + data attributes on script tag)
+  const sidebar = STATIC_SIDEBAR_STYLE
+    + STATIC_SIDEBAR_HTML_AND_JS_PREFIX
+    + escHtml(nonce)
+    + `" id="pp-overlay-script"`
+    + ` data-pp-session="${escHtml(sessionId)}"`
+    + ` data-pp-user="${escHtml(currentUserId || '')}"`
+    + ` data-pp-display-name="${escHtml(displayName || '')}"`
+    + ` data-pp-origin="${escHtml(apiOrigin)}"`
+    + ` data-pp-version="${escHtml(String(currentVersion || 1))}"`
+    + STATIC_JS_SUFFIX;
+
+  return headerBar + sidebar;
 }

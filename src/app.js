@@ -2,9 +2,8 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { db } from './db.js';
-import { DbKv } from './kv.js';
-import { requireAuth } from './middleware/auth.js';
+import { requireAuth, requireAuthOrRedirect } from './middleware/auth.js';
+import { attachBaseUrl } from './middleware/baseUrl.js';
 import { handleLogin, handleCallback, handleLogout, handleAuthDevice, handleAuthDeviceToken, handleAuthToken, handleActivateGet, handleActivatePost, handleInfo, handleSessionCheck } from './routes/auth.js';
 import { handlePush } from './routes/push.js';
 import { handleServe } from './routes/serve.js';
@@ -21,11 +20,6 @@ if (!process.env.GITHUB_CLIENT_SECRET) throw new Error('GITHUB_CLIENT_SECRET env
 
 const app = express();
 
-// KV store (backed by database — works with both SQLite and PostgreSQL)
-const kv = new DbKv();
-app.locals.db = db;
-app.locals.kv = kv;
-
 // Global security headers
 app.use(helmet({
   contentSecurityPolicy: false, // CSP set per-page where HTML is returned
@@ -36,6 +30,9 @@ app.use(helmet({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.text({ type: 'text/html', limit: '10mb' }));
 app.use(cookieParser());
+
+// Attach baseUrl to every request
+app.use(attachBaseUrl);
 
 // Rate limiting on auth endpoints
 const authLimiter = rateLimit({
@@ -77,10 +74,10 @@ app.get('/assets/:file', handleAsset);
 app.get('/favicon.ico', (req, res) => { req.params = { file: 'favicon.ico' }; handleAsset(req, res); });
 
 // Dashboard (redirect to login if not authed)
-app.get('/dashboard', handleDashboard);
+app.get('/dashboard', requireAuthOrRedirect, handleDashboard);
 
 // Plan viewer (redirect to login if not authed)
-app.get('/p/:sessionId', handleServe);
+app.get('/p/:sessionId', requireAuthOrRedirect, handleServe);
 
 // 404
 app.use((req, res) => {
@@ -93,4 +90,4 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-export { app, kv };
+export { app };

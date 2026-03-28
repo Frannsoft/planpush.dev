@@ -1,13 +1,13 @@
 import { knex } from './db.js';
 
-export class DbKv {
+class DbKv {
   async get(key, type = 'text') {
-    const row = await knex('kv_store').where({ key }).first();
+    const now = new Date().toISOString();
+    const row = await knex('kv_store')
+      .where({ key })
+      .where(b => b.whereNull('expires_at').orWhere('expires_at', '>', now))
+      .first();
     if (!row) return null;
-    if (row.expires_at && new Date(row.expires_at) < new Date()) {
-      await knex('kv_store').where({ key }).delete();
-      return null;
-    }
     return type === 'json' ? JSON.parse(row.value) : row.value;
   }
 
@@ -36,3 +36,5 @@ export class DbKv {
     if (deleted > 0) console.log(`[kv] cleaned ${deleted} expired entries`);
   }
 }
+
+export const kv = new DbKv();

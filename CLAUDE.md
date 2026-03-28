@@ -27,13 +27,12 @@ Server runs on port 3000. Requires `.env` (see `.env.example`).
 
 ## Database
 
-- Uses **Knex.js** with a D1-compatible adapter shim (`.prepare().bind().first()/all()/run()`)
+- Uses **Knex.js** query builder directly (no adapter shim)
 - Default: SQLite via `better-sqlite3` (zero-config)
 - PostgreSQL: set `DATABASE_URL=postgres://...` in `.env`
 - KV store is database-backed (`kv_store` table), not filesystem
 - Migrations: JS files in `src/migrations/`, auto-run at startup via `knex.migrate.latest()`
-- `normalizeSql()` in `db.js` auto-translates `datetime('now')` → `NOW()` for PG
-- `extractRows()` in `db.js` handles different `knex.raw()` result shapes per dialect
+- Routes import `knex` directly from `db.js` — no `app.locals` indirection
 
 ## Security
 
@@ -42,7 +41,7 @@ Server runs on port 3000. Requires `.env` (see `.env.example`).
 - Docker runs Node as non-root `planpush` user via `su-exec` entrypoint
 - `SECRET_KEY` must be >= 32 characters (enforced at startup)
 - Device token redemption is atomic (transaction prevents double-refresh-token issuance)
-- Auth check runs before DB lookup in plan viewer (prevents session existence leaks)
+- Auth check via `requireAuthOrRedirect` middleware (prevents session existence leaks)
 - Comment content capped at 4000 chars, anchor at 200
 - Slack messages escape user content for mrkdwn injection prevention
 
@@ -53,3 +52,7 @@ Server runs on port 3000. Requires `.env` (see `.env.example`).
 - CSP with nonces for all inline scripts (base64url encoding)
 - Plan CSS/JS injected server-side, not authored by users
 - Graceful shutdown on SIGTERM/SIGINT (drains connections, destroys DB pool)
+- `req.planpushBaseUrl` middleware computes base URL once per request
+- Shared `BASE_PAGE_CSS` constant for consistent design tokens across all HTML pages
+- Comment overlay CSS/JS pre-computed at module load; only nonce + data attributes vary per request
+- Plan version snapshots stored with 90-day TTL

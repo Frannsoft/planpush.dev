@@ -1,4 +1,6 @@
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
+import { knex } from '../db.js';
+import { kv } from '../kv.js';
 import {
   generateDeviceCode,
   generateUserCode,
@@ -6,16 +8,11 @@ import {
   generateAccessToken,
   hashToken,
 } from '../utils/crypto.js';
-import { escHtml, safeRedirectUrl } from '../utils/html.js';
+import { escHtml, safeRedirectUrl, BASE_PAGE_CSS } from '../utils/html.js';
 import { setSessionCookie, clearSessionCookie, verifyRequest, signSession, verifySession } from '../middleware/auth.js';
 
 const DEVICE_CODE_EXPIRY_MINUTES = 15;
 const ACCESS_TOKEN_EXPIRY_MINUTES = 60;
-
-const GITHUB_CLIENT_ID = () => process.env.GITHUB_CLIENT_ID;
-const GITHUB_CLIENT_SECRET = () => process.env.GITHUB_CLIENT_SECRET;
-const GITHUB_ORG = () => process.env.GITHUB_ORG;
-const BASE_URL = () => process.env.BASE_URL || '';
 
 // --- GET /auth/login ---
 export async function handleLogin(req, res) {
@@ -35,9 +32,10 @@ export async function handleLogin(req, res) {
     path: '/',
   });
 
+  const baseUrl = req.planpushBaseUrl;
   const params = new URLSearchParams({
-    client_id: GITHUB_CLIENT_ID(),
-    redirect_uri: `${BASE_URL()}/auth/callback`,
+    client_id: process.env.GITHUB_CLIENT_ID,
+    redirect_uri: `${baseUrl}/auth/callback`,
     scope: 'read:org',
     state,
   });
@@ -48,7 +46,6 @@ export async function handleLogin(req, res) {
 // --- GET /auth/callback ---
 export async function handleCallback(req, res) {
   const { code, state } = req.query;
-  const db = req.app.locals.db;
 
   if (!code) return res.status(400).send('Missing authorization code');
 
@@ -66,8 +63,8 @@ export async function handleCallback(req, res) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({
-      client_id: GITHUB_CLIENT_ID(),
-      client_secret: GITHUB_CLIENT_SECRET(),
+      client_id: process.env.GITHUB_CLIENT_ID,
+      client_secret: process.env.GITHUB_CLIENT_SECRET,
       code,
     }),
   });
@@ -93,7 +90,7 @@ export async function handleCallback(req, res) {
   const avatarUrl = ghUser.avatar_url || '';
 
   // Check GitHub org membership
-  const orgName = GITHUB_ORG();
+  const orgName = process.env.GITHUB_ORG;
   if (orgName) {
     const orgResp = await fetch(`https://api.github.com/orgs/${encodeURIComponent(orgName)}/members/${encodeURIComponent(githubUsername)}`, {
       headers: { Authorization: `Bearer ${ghToken}`, Accept: 'application/json', 'User-Agent': 'PlanPush' },
@@ -106,24 +103,24 @@ export async function handleCallback(req, res) {
   }
 
   // Upsert user in DB
-  const existingUser = await db.prepare(
-    `SELECT id, role FROM users WHERE github_user_id = ?`
-  ).bind(githubUserId).first();
+  const existingUser = await knex('users')
+    .where({ github_user_id: githubUserId })
+    .select('id', 'role')
+    .first();
 
   let userId, role;
 
   if (existingUser) {
     userId = existingUser.id;
     role = existingUser.role;
-    // Update profile fields
-    await db.prepare(
-      `UPDATE users SET github_username = ?, display_name = ?, avatar_url = ? WHERE id = ?`
-    ).bind(githubUsername, displayName, avatarUrl, userId).run();
+    await knex('users')
+      .where({ id: userId })
+      .update({ github_username: githubUsername, display_name: displayName, avatar_url: avatarUrl });
   } else {
     // Atomic first-user-becomes-admin: transaction prevents race where two simultaneous
     // signups both see count=0 and both get admin
-    userId = crypto.randomUUID();
-    role = await db._knex.transaction({ isolationLevel: 'serializable' }, async (trx) => {
+    userId = randomUUID();
+    role = await knex.transaction({ isolationLevel: 'serializable' }, async (trx) => {
       const countRow = await trx('users').count('id as c').first();
       const c = parseInt(countRow.c, 10);
       const r = c === 0 ? 'admin' : 'member';
@@ -163,19 +160,22 @@ export async function handleLogout(req, res) {
 
 // --- GET /api/auth/device ---
 export async function handleAuthDevice(req, res) {
-  const db = req.app.locals.db;
   const deviceCode = generateDeviceCode();
   const userCode = generateUserCode();
   const expiresAt = new Date(Date.now() + DEVICE_CODE_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
-  await db.prepare(
-    `INSERT INTO device_codes (device_code, user_code, status, expires_at) VALUES (?, ?, 'pending', ?)`
-  ).bind(deviceCode, userCode, expiresAt).run();
+  await knex('device_codes').insert({
+    device_code: deviceCode,
+    user_code: userCode,
+    status: 'pending',
+    expires_at: expiresAt,
+  });
 
+  const baseUrl = req.planpushBaseUrl;
   res.json({
     device_code: deviceCode,
     user_code: userCode,
-    verification_uri: `${BASE_URL()}/activate`,
+    verification_uri: `${baseUrl}/activate`,
     expires_in: DEVICE_CODE_EXPIRY_MINUTES * 60,
     interval: 5,
   });
@@ -183,22 +183,16 @@ export async function handleAuthDevice(req, res) {
 
 // --- POST /api/auth/device/token ---
 export async function handleAuthDeviceToken(req, res) {
-  const db = req.app.locals.db;
-  const kv = req.app.locals.kv;
   const { device_code } = req.body;
 
   if (!device_code) return res.status(400).json({ error: 'missing_device_code' });
 
-  const row = await db.prepare(
-    `SELECT * FROM device_codes WHERE device_code = ?`
-  ).bind(device_code).first();
+  const row = await knex('device_codes').where({ device_code }).first();
 
   if (!row) return res.status(400).json({ error: 'invalid_device_code' });
 
   if (new Date(row.expires_at) < new Date()) {
-    await db.prepare(
-      `UPDATE device_codes SET status = 'expired' WHERE device_code = ?`
-    ).bind(device_code).run();
+    await knex('device_codes').where({ device_code }).update({ status: 'expired' });
     return res.status(400).json({ error: 'expired_token' });
   }
 
@@ -207,9 +201,10 @@ export async function handleAuthDeviceToken(req, res) {
   }
 
   if (row.status === 'authorized') {
-    const user = await db.prepare(
-      `SELECT id, github_user_id, github_username, display_name, role FROM users WHERE github_user_id = ?`
-    ).bind(row.github_user_id).first();
+    const user = await knex('users')
+      .where({ github_user_id: row.github_user_id })
+      .select('id', 'github_user_id', 'github_username', 'display_name', 'role')
+      .first();
 
     if (!user) return res.status(400).json({ error: 'user_not_found' });
 
@@ -217,9 +212,9 @@ export async function handleAuthDeviceToken(req, res) {
     // Prevents double-redemption if CLI polls twice concurrently
     const refreshToken = generateRefreshToken();
     const hashed = await hashToken(refreshToken);
-    const tokenId = crypto.randomUUID();
+    const tokenId = randomUUID();
 
-    const issued = await db._knex.transaction(async (trx) => {
+    const issued = await knex.transaction(async (trx) => {
       const deleted = await trx('device_codes').where({ device_code }).delete();
       if (deleted === 0) return false; // another request already claimed it
       await trx('api_tokens').insert({ id: tokenId, user_id: user.id, hashed_token: hashed });
@@ -240,26 +235,22 @@ export async function handleAuthDeviceToken(req, res) {
 
 // --- POST /api/auth/token ---
 export async function handleAuthToken(req, res) {
-  const db = req.app.locals.db;
-  const kv = req.app.locals.kv;
   const { refresh_token } = req.body;
 
   if (!refresh_token) return res.status(400).json({ error: 'missing_refresh_token' });
 
   const hashed = await hashToken(refresh_token);
 
-  const token = await db.prepare(
-    `SELECT t.id, t.user_id, u.github_user_id, u.github_username, u.display_name, u.role
-     FROM api_tokens t JOIN users u ON t.user_id = u.id
-     WHERE t.hashed_token = ?`
-  ).bind(hashed).first();
+  const token = await knex('api_tokens as t')
+    .join('users as u', 't.user_id', 'u.id')
+    .where('t.hashed_token', hashed)
+    .select('t.id', 't.user_id', 'u.github_user_id', 'u.github_username', 'u.display_name', 'u.role')
+    .first();
 
   if (!token) return res.status(401).json({ error: 'invalid_refresh_token' });
 
   // Update last_used_at
-  await db.prepare(
-    `UPDATE api_tokens SET last_used_at = datetime('now') WHERE id = ?`
-  ).bind(token.id).run();
+  await knex('api_tokens').where({ id: token.id }).update({ last_used_at: knex.fn.now() });
 
   // Issue short-lived access token stored in KV
   const accessToken = generateAccessToken();
@@ -291,7 +282,6 @@ export async function handleActivateGet(req, res) {
 
 // --- POST /activate ---
 export async function handleActivatePost(req, res) {
-  const db = req.app.locals.db;
   const tokenData = await verifyRequest(req);
 
   if (!tokenData) return res.status(401).json({ error: 'Please sign in first.' });
@@ -299,22 +289,20 @@ export async function handleActivatePost(req, res) {
   const userCode = (req.body.user_code || '').toUpperCase().trim();
   if (!userCode) return res.status(400).json({ error: 'Please enter a code.' });
 
-  const row = await db.prepare(
-    `SELECT * FROM device_codes WHERE user_code = ? AND status = 'pending'`
-  ).bind(userCode).first();
+  const row = await knex('device_codes')
+    .where({ user_code: userCode, status: 'pending' })
+    .first();
 
   if (!row) return res.status(400).json({ error: 'Invalid or expired code. Try again.' });
 
   if (new Date(row.expires_at) < new Date()) {
-    await db.prepare(
-      `UPDATE device_codes SET status = 'expired' WHERE device_code = ?`
-    ).bind(row.device_code).run();
+    await knex('device_codes').where({ device_code: row.device_code }).update({ status: 'expired' });
     return res.status(400).json({ error: 'Code has expired. Run /planpush-auth again.' });
   }
 
-  await db.prepare(
-    `UPDATE device_codes SET status = 'authorized', github_user_id = ? WHERE device_code = ?`
-  ).bind(tokenData.github_user_id, row.device_code).run();
+  await knex('device_codes')
+    .where({ device_code: row.device_code })
+    .update({ status: 'authorized', github_user_id: tokenData.github_user_id });
 
   res.set('Content-Type', 'text/html; charset=UTF-8').send(getSuccessPage());
 }
@@ -324,7 +312,7 @@ export async function handleInfo(req, res) {
   res.json({
     auth: 'github',
     version: '1.0.0',
-    org: GITHUB_ORG() || null,
+    org: process.env.GITHUB_ORG || null,
   });
 }
 
@@ -343,7 +331,6 @@ export async function handleSessionCheck(req, res) {
 // --- HTML Pages ---
 
 function getActivatePage(isSignedIn, displayName) {
-  const baseUrl = BASE_URL();
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -351,12 +338,8 @@ function getActivatePage(isSignedIn, displayName) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PlanPush — Activate Device</title>
 <style>
-  :root { --bg: #fff; --text: #1a1d23; --muted: #57606a; --border: #e1e4e8; --accent: #0969da; --error: #cf222e; --success: #1a7f37; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #0d1117; --text: #e6edf3; --muted: #8d96a0; --border: #30363d; --accent: #58a6ff; --error: #f85149; --success: #3fb950; }
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+  ${BASE_PAGE_CSS}
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
   .card { max-width: 400px; width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 32px; text-align: center; }
   h1 { font-size: 20px; margin-bottom: 8px; }
   p { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
@@ -433,12 +416,8 @@ function getSuccessPage() {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PlanPush — Authorized</title>
 <style>
-  :root { --bg: #fff; --text: #1a1d23; --muted: #57606a; --success: #1a7f37; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #0d1117; --text: #e6edf3; --muted: #8d96a0; --success: #3fb950; }
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+  ${BASE_PAGE_CSS}
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
   .card { max-width: 400px; width: 100%; text-align: center; }
   .check { font-size: 48px; color: var(--success); margin-bottom: 16px; }
   h1 { font-size: 20px; margin-bottom: 8px; }
@@ -463,12 +442,8 @@ function getForbiddenPage(orgName) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PlanPush — Access Denied</title>
 <style>
-  :root { --bg: #fff; --text: #1a1d23; --muted: #57606a; --error: #cf222e; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #0d1117; --text: #e6edf3; --muted: #8d96a0; --error: #f85149; }
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+  ${BASE_PAGE_CSS}
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
   .card { max-width: 400px; width: 100%; text-align: center; border: 1px solid var(--error); border-radius: 12px; padding: 32px; }
   h1 { font-size: 20px; margin-bottom: 8px; color: var(--error); }
   p { font-size: 14px; color: var(--muted); }

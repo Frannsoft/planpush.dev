@@ -1,5 +1,7 @@
-import { verifyRequest } from '../middleware/auth.js';
+import { knex } from '../db.js';
+import { kv } from '../kv.js';
 import { buildOverlayHTML } from '../utils/commentOverlay.js';
+import { BASE_PAGE_CSS } from '../utils/html.js';
 
 function generateNonce() {
   const bytes = new Uint8Array(16);
@@ -22,26 +24,26 @@ function buildCsp(nonce) {
   ].join('; ');
 }
 
+// Inject content before a closing tag using indexOf+slice (avoids full-string regex scan)
+function injectBefore(html, tag, injection) {
+  const idx = html.indexOf(tag);
+  if (idx === -1) return html + injection;
+  return html.slice(0, idx) + injection + html.slice(idx);
+}
+
 export async function handleServe(req, res) {
-  const db = req.app.locals.db;
-  const kv = req.app.locals.kv;
   const sessionId = req.params.sessionId;
+  const tokenData = req.tokenData; // populated by requireAuthOrRedirect middleware
 
   if (!sessionId) {
     return res.status(400).json({ error: 'missing_session_id' });
   }
 
-  // Auth check first — don't leak session existence to unauthenticated users
-  const tokenData = await verifyRequest(req);
-  if (!tokenData) {
-    const redirectTo = encodeURIComponent(`/p/${sessionId}`);
-    return res.redirect(`/auth/login?redirect_to=${redirectTo}`);
-  }
-
   // Look up session in DB
-  const session = await db.prepare(
-    `SELECT id, current_version, created_at FROM sessions WHERE id = ?`
-  ).bind(sessionId).first();
+  const session = await knex('sessions')
+    .where({ id: sessionId })
+    .select('id', 'current_version', 'created_at')
+    .first();
 
   if (!session) {
     return res.status(404).set('Content-Type', 'text/html; charset=UTF-8').send(notFoundPage());
@@ -56,8 +58,7 @@ export async function handleServe(req, res) {
 
   // Generate per-request nonce for CSP
   const nonce = generateNonce();
-
-  const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  const baseUrl = req.planpushBaseUrl;
 
   // Inject comment overlay
   const overlay = buildOverlayHTML({
@@ -73,23 +74,17 @@ export async function handleServe(req, res) {
   let out = html;
   const cssLink = '<link rel="stylesheet" href="/assets/plan.css">';
   if (!out.includes('/assets/plan.css')) {
-    out = out.includes('</head>')
-      ? out.replace('</head>', cssLink + '</head>')
-      : cssLink + out;
+    out = injectBefore(out, '</head>', cssLink);
   }
 
   const planScript = `<script nonce="${nonce}" src="/assets/plan.js"></script>`;
-  const beforeClose = planScript + '\n' + overlay;
-  out = out.includes('</body>')
-    ? out.replace('</body>', beforeClose + '</body>')
-    : out + beforeClose;
+  out = injectBefore(out, '</body>', planScript + '\n' + overlay);
 
   res.set({
     'Content-Type': 'text/html; charset=UTF-8',
     'Cache-Control': 'no-cache',
     'Content-Security-Policy': buildCsp(nonce),
     'X-Frame-Options': 'DENY',
-    'X-Content-Type-Options': 'nosniff',
   }).send(out);
 }
 
@@ -97,10 +92,8 @@ function notFoundPage() {
   return `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Not Found</title>
 <style>
-:root{--bg:#fff;--text:#1a1d23;--muted:#57606a}
-@media(prefers-color-scheme:dark){:root{--bg:#0d1117;--text:#e6edf3;--muted:#8d96a0}}
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;min-height:100vh}
+${BASE_PAGE_CSS}
+body{display:flex;align-items:center;justify-content:center;min-height:100vh}
 .c{text-align:center}h1{font-size:48px;margin-bottom:8px}p{color:var(--muted);font-size:14px}
 </style></head><body><div class="c"><h1>404</h1><p>This plan doesn't exist or has been removed.</p></div></body></html>`;
 }
