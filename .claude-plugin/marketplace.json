@@ -1,0 +1,27 @@
+{
+  "name": "planpush",
+  "owner": {
+    "name": "Frannsoft",
+    "email": "hello@planpush.dev"
+  },
+  "metadata": {
+    "description": "Push visual design docs from Claude Code planning sessions to your team. Leave anchored comments, get Slack notifications, and keep everyone in sync.",
+    "version": "0.2.0"
+  },
+  "plugins": [
+    {
+      "name": "planpush",
+      "source": "./plugins/planpush",
+      "description": "Generate and push visual design docs from your planning sessions. Includes /planpush:planpush-auth (one-time setup) and /planpush:planpush (push docs to your team).",
+      "version": "0.2.0",
+      "author": {
+        "name": "Frannsoft"
+      },
+      "homepage": "https://planpush.dev",
+      "repository": "https://github.com/Frannsoft/planpush.dev",
+      "license": "MIT",
+      "keywords": ["planpush", "design-doc", "planning", "collaboration"],
+      "category": "productivity"
+    }
+  ]
+}
