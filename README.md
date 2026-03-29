@@ -1,4 +1,4 @@
-# PlanPush Community Edition
+# PlanPush
 
 Self-hosted design doc server for [PlanPush](https://github.com/Frannsoft/planpush.plugins) — the Claude Code plugin that generates visual HTML design docs from planning sessions.
 
