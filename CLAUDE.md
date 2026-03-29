@@ -1,20 +1,19 @@
 # PlanPush
 
-Self-hosted design doc collaboration server + Claude Code plugin marketplace.
+Self-hosted design doc collaboration server + Claude Code plugin.
 
 ## Project Structure
 
 - `src/` — Express.js server (Node 22+, Knex.js for SQLite/PostgreSQL)
-- `plugins/` — Claude Code plugin marketplace
+- `plugins/planpush/` — Claude Code plugin
 - `.claude-plugin/marketplace.json` — marketplace manifest
 
-## Plugin Commands
+## Plugin
 
-The PlanPush plugin commands live in this repo at `plugins/planpush/commands/`:
-- `planpush.md` — main push skill (`/planpush:planpush`)
-- `planpush-auth.md` — device-flow auth skill (`/planpush:planpush-auth`)
+Single command: `/planpush:planpush` — generates a visual HTML design doc and pushes it to the server. Authentication (RFC 8628 device flow) is handled inline on first run or when the refresh token expires.
 
-When updating PlanPush plugin commands, edit the files in this repo — not the old `planpush.plugins` repo.
+Command source: `plugins/planpush/commands/planpush.md`
+When updating, edit files in this repo — not the old `planpush.plugins` repo.
 
 ## Running Locally
 

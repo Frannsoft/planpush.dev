@@ -92,15 +92,15 @@ For HTTPS, put a reverse proxy (nginx, Caddy, Traefik) in front of the server.
 
 ## Plugin Setup
 
-Install the PlanPush plugin in Claude Code, then configure it to point at your server:
+Install the PlanPush plugin in Claude Code, then run:
 
 ```bash
 # In Claude Code
-/planpush:planpush-auth
+/planpush:planpush
 ```
 
-When prompted, enter your server URL (e.g., `http://localhost:3000`).
+On first run, you'll be prompted for your server URL and guided through authentication automatically.
 
 ## License
 
-MIT
+AGPL-3.0-only

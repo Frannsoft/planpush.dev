@@ -1,5 +1,5 @@
 ---
-description: Generates or updates a visual HTML design doc from the current planning session and pushes it to PlanPush for your team to view, comment on, and get notified about.
+description: Generates or updates a visual HTML design doc from the current planning session and pushes it to PlanPush for your team to view, comment on, and get notified about. Handles authentication automatically on first run.
 ---
 
 # PlanPush
@@ -8,63 +8,131 @@ $ARGUMENTS
 
 Push a visual design doc from this planning session to PlanPush.
 
-**Prerequisites:** Run `/planpush-auth` once before using this command. Best run mid- or end-of a planning or design conversation.
-
 ---
 
-## 1. Check authentication
+## 1. Authenticate
 
-Run:
+Read existing credentials:
 
   cat ~/.planpush/credentials 2>/dev/null
 
-If the file does not exist or is empty, print:
+If the file exists and contains both `server_url` and `refresh_token`, skip to step 1c.
 
-  ✗ Not authenticated. Run /planpush-auth first to connect this machine to PlanPush.
+If the file exists and contains `server_url` but no `refresh_token`, skip to step 1b using the saved `{server_url}`.
+
+Otherwise, run first-time setup (step 1a).
+
+### 1a. First-time setup
+
+Ask the user:
+
+  What is your PlanPush server URL? (e.g., https://planpush.example.com)
+
+Store the response (strip any trailing slash) as `{server_url}`.
+
+Validate the server:
+
+  curl -s -X GET {server_url}/api/info
+
+If the request fails, print:
+
+  ✗ Could not reach the server at {server_url}. Check the URL and try again.
 
 Then stop.
 
-Parse the credentials JSON:
-- `server_url`
-- `refresh_token`
-- `user`
-- `org`
-
-If `server_url` is missing, print:
-
-  ✗ No server configured. Run /planpush-auth to set up your PlanPush server.
-
-Then stop.
-
-Use `{server_url}` for all API calls below.
-
----
-
-## 2. Exchange refresh token for access token
+### 1b. Device flow
 
 Run:
+
+  curl -s -X GET {server_url}/api/auth/device
+
+Parse the JSON response:
+- `device_code` — used to poll for completion (never shown to user)
+- `user_code` — shown to user
+- `verification_uri` — URL user opens to complete auth
+- `expires_in` — seconds until the code expires
+- `interval` — polling interval in seconds (default: 5)
+
+If the request fails or returns an error, print:
+
+  ✗ Could not reach PlanPush server. Check your connection and try again.
+
+Then stop.
+
+Print:
+
+  Open this URL in your browser and enter the code below:
+
+    URL:  {verification_uri}
+    Code: {user_code}
+
+  Waiting for authentication...
+
+Every `{interval}` seconds, run:
+
+  curl -s -X POST {server_url}/api/auth/device/token \
+    -H "Content-Type: application/json" \
+    -d '{"device_code": "{device_code}"}'
+
+Handle responses:
+
+| Response | Action |
+|---|---|
+| HTTP 428 with `{"error": "authorization_pending"}` | Wait `{interval}` seconds, poll again |
+| HTTP 200 with `refresh_token` present | Save credentials and continue |
+| `{"error": "expired_token"}` | Print `✗ Code expired. Run /planpush again.` and stop |
+| Any other error | Print the error and stop |
+
+Continue polling until complete or `{expires_in}` seconds have elapsed.
+
+On success, save credentials:
+
+  mkdir -p ~/.planpush
+
+Write to `~/.planpush/credentials`:
+
+```json
+{
+  "server_url": "{server_url}",
+  "refresh_token": "{refresh_token from response}",
+  "user": "{user from response}",
+  "issued_at": "{current ISO 8601 timestamp}"
+}
+```
+
+Then:
+
+  chmod 600 ~/.planpush/credentials
+
+Print:
+
+  ✓ Authenticated as {user}
+
+Continue to step 1c.
+
+### 1c. Exchange refresh token for access token
+
+Using `{server_url}` and `{refresh_token}` from the credentials file, run:
 
   curl -s -X POST {server_url}/api/auth/token \
     -H "Content-Type: application/json" \
     -d '{"refresh_token": "{refresh_token}"}'
 
-Expected response: `{"access_token": "...", "expires_in": 300}`
+Expected response: `{"access_token": "...", "expires_in": 3600}`
 
-If the response contains `{"error": "invalid_token"}` or any auth error, print:
+If the response contains `{"error": "invalid_refresh_token"}` or any auth error:
+- Print: `⟳ Session expired. Re-authenticating...`
+- Go back to step 1b to run the device flow again with the existing `{server_url}`
+- After successful re-auth, retry this step once
+- If it fails a second time, print `✗ Authentication failed. Check your server and try again.` and stop
 
-  ✗ Session expired. Run /planpush-auth again to re-authenticate.
-
-Then stop.
-
-Store the `access_token` for use in step 7.
+Store the `access_token` for use in step 6.
 
 ---
 
-## 3. Resolve output directory and session name
+## 2. Resolve output directory and session name
 
 Determine the plan output directory:
-
-Run:
 
   git rev-parse --show-toplevel 2>/dev/null
 
@@ -73,8 +141,6 @@ If this succeeds, use the result as `{repo_root}` and set `{plans_dir}` to `{rep
 If it fails (no git repo), set `{plans_dir}` to `./pushplans` (relative to the current working directory).
 
 Next, resolve the session name.
-
-Run:
 
   echo $CLAUDE_SESSION_NAME
 
@@ -95,9 +161,7 @@ The local output file will be: `{plans_dir}/pushplan_{session-name}.html`
 
 ---
 
-## 4. Check for existing server session
-
-Run:
+## 3. Check for existing server session
 
   cat .claude/plan-session-$CLAUDE_SESSION_ID 2>/dev/null
 
@@ -108,9 +172,7 @@ If the file does not exist or is empty, this is a first push — the server will
 
 ---
 
-## 5. Ensure output directory exists and update .gitignore
-
-Run:
+## 4. Ensure output directory exists and update .gitignore
 
   mkdir -p {plans_dir}
 
@@ -121,7 +183,7 @@ Check the project root `.gitignore` (or create one if it doesn't exist). If eith
 
 ---
 
-## 6. Determine context and generate HTML
+## 5. Determine context and generate HTML
 
 Scan the conversation history for the most recent message that contains a prior `/p/` URL from the server — this marks the last push.
 
@@ -186,7 +248,7 @@ Use it to influence what gets emphasized, added, or focused on. Examples:
 
 ---
 
-## 7. Push to server
+## 6. Push to server
 
 Read the HTML file and push it:
 
@@ -207,7 +269,7 @@ Read the HTML file and push it:
 
 Expected response: `{"session_id": "...", "url": "{server_url}/p/..."}`
 
-If the push returns 401 (access token expired), retry step 2 to get a new access token, then retry the push once. If it fails again, print the error and stop.
+If the push returns 401, go back to step 1c to get a new access token, then retry the push once. If it fails again, print the error and stop.
 
 If the push fails (non-200 or error in response body), print:
 
@@ -218,7 +280,7 @@ Then stop.
 
 ---
 
-## 8. Save the session ID
+## 7. Save the session ID
 
 Write the `session_id` from the response to:
 
@@ -228,7 +290,7 @@ Write the `session_id` from the response to:
 
 ---
 
-## 9. Confirm
+## 8. Confirm
 
 Print:
 

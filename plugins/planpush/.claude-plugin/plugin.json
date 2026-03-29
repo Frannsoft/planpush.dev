@@ -1,6 +1,6 @@
 {
   "name": "planpush",
-  "description": "Push visual design docs from Claude Code planning sessions to your team. Run /planpush:planpush-auth once to set up, then /planpush:planpush to push docs.",
+  "description": "Push visual design docs from Claude Code planning sessions to your team. Run /planpush:planpush to generate and push docs — authentication is handled automatically.",
   "version": "0.2.0",
   "author": {
     "name": "Frannsoft"

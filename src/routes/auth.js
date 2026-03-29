@@ -299,7 +299,7 @@ export async function handleActivatePost(req, res) {
     // Check if expired or simply not found
     const row = await knex('device_codes').where({ user_code: userCode }).first();
     if (row && new Date(row.expires_at) < new Date()) {
-      return res.status(400).json({ error: 'Code has expired. Run /planpush-auth again.' });
+      return res.status(400).json({ error: 'Code has expired. Run /planpush again.' });
     }
     return res.status(400).json({ error: 'Invalid or expired code. Try again.' });
   }
