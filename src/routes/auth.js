@@ -289,20 +289,20 @@ export async function handleActivatePost(req, res) {
   const userCode = (req.body.user_code || '').toUpperCase().trim();
   if (!userCode) return res.status(400).json({ error: 'Please enter a code.' });
 
-  const row = await knex('device_codes')
+  // Atomic: update only if still pending, preventing double-activation race
+  const updated = await knex('device_codes')
     .where({ user_code: userCode, status: 'pending' })
-    .first();
-
-  if (!row) return res.status(400).json({ error: 'Invalid or expired code. Try again.' });
-
-  if (new Date(row.expires_at) < new Date()) {
-    await knex('device_codes').where({ device_code: row.device_code }).update({ status: 'expired' });
-    return res.status(400).json({ error: 'Code has expired. Run /planpush-auth again.' });
-  }
-
-  await knex('device_codes')
-    .where({ device_code: row.device_code })
+    .where('expires_at', '>', new Date().toISOString())
     .update({ status: 'authorized', github_user_id: tokenData.github_user_id });
+
+  if (updated === 0) {
+    // Check if expired or simply not found
+    const row = await knex('device_codes').where({ user_code: userCode }).first();
+    if (row && new Date(row.expires_at) < new Date()) {
+      return res.status(400).json({ error: 'Code has expired. Run /planpush-auth again.' });
+    }
+    return res.status(400).json({ error: 'Invalid or expired code. Try again.' });
+  }
 
   res.set('Content-Type', 'text/html; charset=UTF-8').send(getSuccessPage());
 }

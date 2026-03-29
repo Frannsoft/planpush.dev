@@ -24,27 +24,42 @@ export async function handleSessionInfo(req, res) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 
-  // Fetch version history
-  const versions = await knex('session_versions as sv')
-    .leftJoin('users as u', 'sv.pushed_by', 'u.id')
-    .where('sv.session_id', sessionId)
-    .select(
-      'sv.version', 'sv.pushed_at',
-      'u.display_name as pushed_by_name',
-      'u.github_username as pushed_by_username',
-      'u.avatar_url as pushed_by_avatar',
-    )
-    .orderBy('sv.version', 'desc');
+  // Fetch version history, comment stats, and recent comments in parallel
+  const [versions, stats, comments] = await Promise.all([
+    knex('session_versions as sv')
+      .leftJoin('users as u', 'sv.pushed_by', 'u.id')
+      .where('sv.session_id', sessionId)
+      .select(
+        'sv.version', 'sv.pushed_at',
+        'u.display_name as pushed_by_name',
+        'u.github_username as pushed_by_username',
+        'u.avatar_url as pushed_by_avatar',
+      )
+      .orderBy('sv.version', 'desc')
+      .limit(200),
 
-  // Fetch comment stats
-  const stats = await knex('comments')
-    .where('session_id', sessionId)
-    .select(
-      knex.raw('COUNT(*) as total'),
-      knex.raw('COALESCE(SUM(CASE WHEN resolved = 0 THEN 1 ELSE 0 END), 0) as open'),
-      knex.raw('COALESCE(SUM(CASE WHEN resolved = 1 THEN 1 ELSE 0 END), 0) as resolved'),
-    )
-    .first();
+    knex('comments')
+      .where('session_id', sessionId)
+      .select(
+        knex.raw('COUNT(*) as total'),
+        knex.raw('COALESCE(SUM(CASE WHEN resolved = 0 THEN 1 ELSE 0 END), 0) as open'),
+        knex.raw('COALESCE(SUM(CASE WHEN resolved = 1 THEN 1 ELSE 0 END), 0) as resolved'),
+      )
+      .first(),
+
+    knex('comments as c')
+      .join('users as u', 'c.author_id', 'u.id')
+      .where('c.session_id', sessionId)
+      .select(
+        'c.id', 'c.content', 'c.anchor', 'c.resolved', 'c.created_at',
+        'c.resolved_at', 'c.plan_version',
+        'u.display_name as author_name',
+        'u.github_username as author_username',
+        'u.avatar_url as author_avatar',
+      )
+      .orderBy('c.created_at', 'desc')
+      .limit(100),
+  ]);
 
   // Build activity feed: interleave version pushes + comments, newest first, limit 50
   const versionActivity = versions.map(v => ({
@@ -54,19 +69,6 @@ export async function handleSessionInfo(req, res) {
     avatar: v.pushed_by_avatar || null,
     timestamp: v.pushed_at,
   }));
-
-  const comments = await knex('comments as c')
-    .join('users as u', 'c.author_id', 'u.id')
-    .where('c.session_id', sessionId)
-    .select(
-      'c.id', 'c.content', 'c.anchor', 'c.resolved', 'c.created_at',
-      'c.resolved_at', 'c.plan_version',
-      'u.display_name as author_name',
-      'u.github_username as author_username',
-      'u.avatar_url as author_avatar',
-    )
-    .orderBy('c.created_at', 'desc')
-    .limit(100);
 
   const commentActivity = [];
   for (const c of comments) {

@@ -1,13 +1,8 @@
 import { knex } from '../db.js';
 import { kv } from '../kv.js';
+import { generateNonce } from '../utils/crypto.js';
 import { buildOverlayHTML } from '../utils/commentOverlay.js';
 import { BASE_PAGE_CSS, escHtml } from '../utils/html.js';
-
-function generateNonce() {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Buffer.from(bytes).toString('base64url');
-}
 
 function buildCsp(nonce) {
   return [
@@ -33,31 +28,35 @@ function injectBefore(html, tag, injection) {
 
 export async function handleServe(req, res) {
   const sessionId = req.params.sessionId;
-  const tokenData = req.tokenData; // populated by requireAuthOrRedirect middleware
+  const tokenData = req.tokenData;
 
   if (!sessionId) {
     return res.status(400).json({ error: 'missing_session_id' });
   }
 
-  // Look up session in DB
-  const session = await knex('sessions')
-    .where({ id: sessionId })
-    .select('id', 'current_version', 'created_at')
-    .first();
+  // Optimistically fetch current HTML in parallel with session lookup
+  // (for versioned requests, we'll need a second KV fetch)
+  const requestedVersion = parseInt(req.query.v, 10) || 0;
+  const [session, currentHtml] = await Promise.all([
+    knex('sessions')
+      .where({ id: sessionId })
+      .select('id', 'current_version', 'created_at')
+      .first(),
+    requestedVersion > 0
+      ? null // skip optimistic fetch for versioned requests
+      : kv.get(`plan:${sessionId}:current`),
+  ]);
 
   if (!session) {
     return res.status(404).set('Content-Type', 'text/html; charset=UTF-8').send(notFoundPage());
   }
 
-  // Support ?v=N to view a specific version
-  const requestedVersion = parseInt(req.query.v, 10);
   const isVersioned = requestedVersion > 0 && requestedVersion < session.current_version;
 
-  // Fetch HTML from KV
-  const kvKey = isVersioned
-    ? `plan:${sessionId}:v:${requestedVersion}`
-    : `plan:${sessionId}:current`;
-  const html = await kv.get(kvKey);
+  // Use the optimistically fetched HTML, or fetch the versioned snapshot
+  const html = isVersioned
+    ? await kv.get(`plan:${sessionId}:v:${requestedVersion}`)
+    : currentHtml;
 
   if (!html) {
     if (isVersioned) {

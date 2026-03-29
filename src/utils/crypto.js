@@ -32,6 +32,11 @@ export function generateSessionId() {
   return 'sess_' + generateId().slice(0, 12);
 }
 
+export function generateNonce() {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Buffer.from(bytes).toString('base64url');
+}
+
 export async function hashToken(token) {
   const encoder = new TextEncoder();
   const data = encoder.encode(token);

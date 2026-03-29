@@ -73,17 +73,17 @@ export async function handlePush(req, res) {
     const rawTitle = titleMatch ? titleMatch[1].trim().slice(0, 200) : 'Untitled Plan';
     sessionTitle = rawTitle.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
 
-    await knex('sessions').insert({
-      id: sessionId,
-      title: sessionTitle,
-      created_by: tokenData.user_id,
-    });
-
-    // Record version 1 in history
-    await knex('session_versions').insert({
-      session_id: sessionId,
-      version: 1,
-      pushed_by: tokenData.user_id,
+    await knex.transaction(async (trx) => {
+      await trx('sessions').insert({
+        id: sessionId,
+        title: sessionTitle,
+        created_by: tokenData.user_id,
+      });
+      await trx('session_versions').insert({
+        session_id: sessionId,
+        version: 1,
+        pushed_by: tokenData.user_id,
+      });
     });
   }
 

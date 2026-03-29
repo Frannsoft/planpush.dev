@@ -1,7 +1,7 @@
 // Slack notification helper — fire and forget
 // Three events: comment_added, plan_updated, comment_resolved
 
-export async function notifySlack({ event, sessionId, sessionTitle, author, content, anchor, commentId, planUrl }) {
+export async function notifySlack({ event, sessionId, sessionTitle, author, content, anchor, planUrl }) {
   const webhookUrl = (process.env.SLACK_WEBHOOK_URL || '').trim();
   if (!webhookUrl) return; // Slack not configured — skip silently
 
