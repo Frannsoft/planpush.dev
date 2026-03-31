@@ -1,16 +1,22 @@
 # PlanPush
 
+[![Docker Image](https://img.shields.io/docker/v/frannsoftdev/planpush?label=Docker%20Hub&logo=docker&sort=semver)](https://hub.docker.com/r/frannsoftdev/planpush)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](LICENSE)
+
 Self-hosted design doc server for [PlanPush](https://github.com/Frannsoft/planpush.plugins) — the Claude Code plugin that generates visual HTML design docs from planning sessions.
 
 Your team runs `/planpush` in Claude Code, and the generated doc is pushed here. Team members open the private URL to view it, leave anchored comments, and get Slack notifications.
 
 ## Requirements
 
-- Node.js 22+ (or Docker)
 - A GitHub OAuth App
 - A GitHub Organization (used for access control)
 
 ## Quick Start (Docker)
+
+```bash
+docker pull frannsoftdev/planpush:latest
+```
 
 1. **Create a GitHub OAuth App**
 
@@ -23,11 +29,7 @@ Your team runs `/planpush` in Claude Code, and the generated doc is pushed here.
 
 2. **Configure environment**
 
-   ```bash
-   cp .env.example .env
-   ```
-
-   Edit `.env`:
+   Create a `.env` file:
 
    ```
    GITHUB_CLIENT_ID=<your client id>
@@ -38,6 +40,34 @@ Your team runs `/planpush` in Claude Code, and the generated doc is pushed here.
    ```
 
 3. **Run**
+
+   ```bash
+   docker run -d \
+     --name planpush \
+     -p 3000:3000 \
+     -v planpush-data:/app/data \
+     --env-file .env \
+     --restart unless-stopped \
+     frannsoftdev/planpush:latest
+   ```
+
+   Or with Docker Compose — create a `docker-compose.yml`:
+
+   ```yaml
+   services:
+     planpush:
+       image: frannsoftdev/planpush:latest
+       ports:
+         - "3000:3000"
+       volumes:
+         - planpush-data:/app/data
+       env_file:
+         - .env
+       restart: unless-stopped
+
+   volumes:
+     planpush-data:
+   ```
 
    ```bash
    docker compose up -d
@@ -83,6 +113,15 @@ All data is stored locally:
 - **HTML snapshots:** `data/kv/`
 
 Back up the `data/` directory to preserve everything.
+
+## Updating
+
+```bash
+docker pull frannsoftdev/planpush:latest
+docker compose up -d
+```
+
+Your data is preserved in the `planpush-data` volume.
 
 ## Deploying to Production
 
