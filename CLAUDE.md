@@ -44,6 +44,26 @@ Server runs on port 3000. Requires `.env` (see `.env.example`).
 - Comment content capped at 4000 chars, anchor at 200
 - Slack messages escape user content for mrkdwn injection prevention
 
+## Docker & CI
+
+- Published to Docker Hub: `frannsoftdev/planpush`
+- `.github/workflows/docker-publish.yml` — manual `workflow_dispatch` to build and push to Docker Hub
+- `.github/workflows/auto-tag.yml` — on push to `main`, creates git tag `v{version}` from `package.json` if it doesn't exist
+- Version lives in `package.json` — bump it in PRs, auto-tag on merge, then manually publish
+- Docker tags: `frannsoftdev/planpush:{version}` + `frannsoftdev/planpush:latest`
+- Single arch (linux/amd64) only
+- GitHub secrets required: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`
+
+## Admin Features
+
+- Soft-delete sessions (`deleted_at` column) — all session queries filter with `.whereNull('deleted_at')`
+- User roles: `admin` / `member` — first user to sign in becomes admin
+- `requireAdmin` middleware checks role from DB (not stale token data)
+- User deactivation with KV-cached check (5min TTL) in `verifyRequest`
+- Last-admin protection guards on role change and deactivation
+- Token revocation (`revoked_at` on `api_tokens`)
+- Audit log (`audit_log` table) — fire-and-forget writes via `setImmediate` in `src/utils/audit.js`
+
 ## Key Patterns
 
 - Auth: GitHub OAuth (web) + RFC 8628 device flow (CLI)
