@@ -3,7 +3,7 @@
 [![Docker Image](https://img.shields.io/docker/v/frannsoftdev/planpush?label=Docker%20Hub&logo=docker&sort=semver)](https://hub.docker.com/r/frannsoftdev/planpush)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0--only-blue.svg)](LICENSE)
 
-Self-hosted design doc server for [PlanPush](https://github.com/Frannsoft/planpush.plugins) — the Claude Code plugin that generates visual HTML design docs from planning sessions.
+Self-hosted design doc server with a Claude Code plugin that generates visual HTML design docs from planning sessions.
 
 Your team runs `/planpush` in Claude Code, and the generated doc is pushed here. Team members open the private URL to view it, leave anchored comments, and get Slack notifications.
 
@@ -108,11 +108,13 @@ Set `SLACK_WEBHOOK_URL` in `.env` to enable notifications for:
 
 ## Data
 
-All data is stored locally:
-- **SQLite database:** `data/planpush.db`
-- **HTML snapshots:** `data/kv/`
+By default, all data is stored in a single SQLite database at `data/planpush.db` — plan HTML, comments, users, and KV entries are all database-backed. Back up the `data/` directory to preserve everything.
 
-Back up the `data/` directory to preserve everything.
+For PostgreSQL, set `DATABASE_URL` in `.env`:
+
+```
+DATABASE_URL=postgres://user:password@host:5432/planpush
+```
 
 ## Updating
 
@@ -131,10 +133,15 @@ For HTTPS, put a reverse proxy (nginx, Caddy, Traefik) in front of the server.
 
 ## Plugin Setup
 
-Install the PlanPush plugin in Claude Code, then run:
+Install the PlanPush plugin from the Claude Code marketplace:
 
 ```bash
-# In Claude Code
+/install-plugin planpush
+```
+
+Then run the command in any Claude Code session:
+
+```bash
 /planpush:planpush
 ```
 
