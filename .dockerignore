@@ -1,8 +1,12 @@
 node_modules
 data
 .env
+.env.*
 *.db
 .git
+.github
+.claude
 .gitignore
-README.md
+*.md
 docker-compose.yml
+plugins
