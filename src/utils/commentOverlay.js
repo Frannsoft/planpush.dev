@@ -6,13 +6,6 @@ import { buildHeaderHTML, HEADER_CSS, LOGOUT_JS, escHtml } from './html.js';
 // --- Pre-computed static parts ---
 
 const SIDEBAR_CSS = `
-#pp-toggle{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:100000;background:var(--pp-accent,#2563eb);color:#fff;border:none;border-radius:10px 0 0 10px;padding:14px 7px;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:12px;font-weight:600;writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:.5px;box-shadow:-2px 0 12px rgba(0,0,0,.12);transition:right .3s cubic-bezier(.4,0,.2,1),transform .15s}
-#pp-toggle:hover{background:var(--pp-accent-hover,#1d4ed8)}
-#pp-toggle:active{transform:translateY(-50%) scale(.95)}
-#pp-toggle .pp-badge{display:inline-block;background:#fff;color:var(--pp-accent,#2563eb);border-radius:10px;padding:1px 6px;font-size:11px;font-weight:700;margin-top:6px;writing-mode:horizontal-tb}
-#pp-toggle.pp-shifted{right:380px}
-@media(max-width:600px){#pp-toggle.pp-shifted{right:0;transform:translateY(-50%) translateX(100%);pointer-events:none;opacity:0}}
-
 #pp-sidebar{position:fixed;right:0;top:48px;height:calc(100vh - 48px);width:380px;max-width:100vw;background:var(--pp-bg,#fff);border-left:1px solid var(--pp-border,#d0d7de);z-index:99999;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:var(--pp-text,#1a1d23);box-shadow:-8px 0 24px rgba(0,0,0,.08)}
 #pp-sidebar.pp-open{transform:translateX(0)}
 @media(prefers-color-scheme:dark){#pp-sidebar{box-shadow:-8px 0 24px rgba(0,0,0,.4)}}
@@ -69,8 +62,6 @@ const SIDEBAR_CSS = `
 .pp-bubble svg{width:16px;height:16px;flex-shrink:0}`;
 
 const SIDEBAR_HTML = `
-<button id="pp-toggle" title="Comments">Comments<span class="pp-badge" id="pp-badge" style="display:none">0</span></button>
-
 <div id="pp-sidebar">
   <div id="pp-sidebar-header">
     <h3>Comments</h3>
@@ -110,8 +101,9 @@ const OVERLAY_JS = `(function() {
     submitting: false,
   };
 
-  var toggle = document.getElementById('pp-toggle');
-  var badge = document.getElementById('pp-badge');
+  var toggle = document.getElementById('pp-comments-btn');
+  var toggleLabel = document.getElementById('pp-comments-btn-label');
+  var toggleBadge = document.getElementById('pp-comments-btn-badge');
   var sidebar = document.getElementById('pp-sidebar');
   var closeBtn = document.getElementById('pp-sidebar-close');
   var filterBar = document.getElementById('pp-anchor-filter');
@@ -138,13 +130,13 @@ const OVERLAY_JS = `(function() {
   function openSidebar() {
     state.open = true;
     sidebar.classList.add('pp-open');
-    toggle.classList.add('pp-shifted');
+    toggle.classList.add('pp-active');
     if (!state.polling) startPolling();
   }
   function closeSidebar() {
     state.open = false;
     sidebar.classList.remove('pp-open');
-    toggle.classList.remove('pp-shifted');
+    toggle.classList.remove('pp-active');
   }
 
   function startPolling() {
@@ -253,8 +245,11 @@ const OVERLAY_JS = `(function() {
 
   function updateBadge() {
     var unresolved = state.comments.filter(function(c) { return !c.resolved; }).length;
-    if (unresolved > 0) { badge.textContent = unresolved; badge.style.display = ''; }
-    else { badge.style.display = 'none'; }
+    toggleLabel.textContent = unresolved > 0 ? 'Comments (' + unresolved + ')' : 'Comments';
+    if (toggleBadge) {
+      if (unresolved > 0) { toggleBadge.textContent = unresolved; toggleBadge.style.display = ''; }
+      else { toggleBadge.style.display = 'none'; }
+    }
   }
 
   function isOutdated(c) { return c.plan_version < CURRENT_VERSION; }
@@ -362,7 +357,7 @@ const OVERLAY_JS = `(function() {
   document.addEventListener('click', function(e) {
     var anchor = e.target.closest('[data-anchor]');
     if (!anchor) return;
-    if (e.target.closest('#pp-sidebar') || e.target.closest('#pp-toggle')) return;
+    if (e.target.closest('#pp-sidebar') || e.target.closest('#pp-comments-btn')) return;
     e.preventDefault();
     setAnchor(anchor.getAttribute('data-anchor'));
   });
@@ -406,12 +401,12 @@ const INFO_PANEL_CSS = `
 #pp-info-panel{position:fixed;right:0;top:48px;height:calc(100vh - 48px);width:380px;max-width:100vw;background:var(--pp-bg,#fff);border-left:1px solid var(--pp-border,#d0d7de);z-index:99998;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:var(--pp-text,#1a1d23);box-shadow:-8px 0 24px rgba(0,0,0,.08)}
 #pp-info-panel.pp-open{transform:translateX(0)}
 @media(prefers-color-scheme:dark){#pp-info-panel{box-shadow:-8px 0 24px rgba(0,0,0,.4)}}
-@media(max-width:600px){#pp-info-panel{width:100vw;top:0;height:100vh;border-left:none}}
+@media(max-width:600px){#pp-info-panel{width:100vw;top:48px;height:calc(100vh - 48px);border-left:none}}
 
 #pp-info-header{padding:14px 16px;border-bottom:1px solid var(--pp-border,#d0d7de);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 #pp-info-header h3{font-size:15px;font-weight:700;margin:0;letter-spacing:-0.01em}
-#pp-info-close{background:none;border:none;cursor:pointer;color:var(--pp-text-muted,#57606a);font-size:20px;padding:4px 8px;border-radius:6px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;transition:background .15s}
-#pp-info-close:hover{background:var(--pp-surface-1,#f6f8fa)}
+#pp-info-close{background:var(--pp-surface-1,#f6f8fa);border:1px solid var(--pp-border,#d0d7de);cursor:pointer;color:var(--pp-text,#1a1d23);font-size:18px;font-weight:700;padding:0;border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s;flex-shrink:0}
+#pp-info-close:hover{background:var(--pp-border,#d0d7de);border-color:var(--pp-border-bold,#bcc3cd)}
 
 #pp-info-tabs{display:flex;border-bottom:1px solid var(--pp-border,#d0d7de);flex-shrink:0}
 .pp-info-tab{flex:1;padding:10px 0;text-align:center;font-size:12px;font-weight:600;color:var(--pp-text-muted,#57606a);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;min-height:40px;transition:color .15s,border-color .15s}
@@ -512,6 +507,8 @@ const INFO_PANEL_JS = `(function() {
   var infoData = null;
 
   // Show header buttons on plan pages
+  var commentsBtn = document.getElementById('pp-comments-btn');
+  if (commentsBtn) commentsBtn.style.display = '';
   if (infoBtn) infoBtn.style.display = '';
   if (shareBtn) shareBtn.style.display = '';
 

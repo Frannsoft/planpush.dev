@@ -40,6 +40,7 @@ export async function handleServe(req, res) {
   const [session, currentHtml] = await Promise.all([
     knex('sessions')
       .where({ id: sessionId })
+      .whereNull('deleted_at')
       .select('id', 'current_version', 'created_at')
       .first(),
     requestedVersion > 0

@@ -11,6 +11,7 @@ export async function handleSessionInfo(req, res) {
   const session = await knex('sessions as s')
     .leftJoin('users as u', 's.created_by', 'u.id')
     .where('s.id', sessionId)
+    .whereNull('s.deleted_at')
     .select(
       's.id', 's.title', 's.current_version', 's.created_at', 's.last_updated',
       'u.github_username as creator_github_username',

@@ -3,6 +3,7 @@ import { kv } from '../kv.js';
 import { generateSessionId } from '../utils/crypto.js';
 import { notifySlack } from '../utils/slack.js';
 import { sanitizeHtml } from '../utils/sanitize.js';
+import { writeAuditLog } from '../utils/audit.js';
 
 const VERSION_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
 
@@ -32,6 +33,7 @@ export async function handlePush(req, res) {
 
     const session = await knex('sessions')
       .where({ id: existingSessionId })
+      .whereNull('deleted_at')
       .select('id', 'title', 'created_by')
       .first();
 
@@ -109,6 +111,14 @@ export async function handlePush(req, res) {
       }).catch(console.error);
     });
   }
+
+  writeAuditLog(knex, {
+    actorId: tokenData.user_id,
+    action: 'session.pushed',
+    targetType: 'session',
+    targetId: sessionId,
+    meta: { version: currentVersion, is_new: !existingSessionId },
+  });
 
   res.json({
     session_id: sessionId,

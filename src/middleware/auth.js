@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
+import { knex } from '../db.js';
 import { kv } from '../kv.js';
 
 const COOKIE_NAME = '__session';
@@ -48,25 +49,55 @@ export function clearSessionCookie(res) {
 }
 
 export async function verifyRequest(req) {
+  let tokenData = null;
+
   // Path 1: Bearer token (CLI device-flow access tokens)
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7);
     if (token.startsWith('at_')) {
-      return kv.get(`access_token:${token}`, 'json');
+      tokenData = await kv.get(`access_token:${token}`, 'json');
     }
   }
 
   // Path 2: Session cookie (browser)
-  const cookie = req.cookies?.[COOKIE_NAME];
-  if (cookie) return verifySession(cookie);
+  if (!tokenData) {
+    const cookie = req.cookies?.[COOKIE_NAME];
+    if (cookie) tokenData = verifySession(cookie);
+  }
 
-  return null;
+  if (!tokenData) return null;
+
+  // Check if user is deactivated (cached in KV for 5 min)
+  const cacheKey = `deactivated:${tokenData.user_id}`;
+  const cached = await kv.get(cacheKey);
+  if (cached === '1') return null;
+  if (cached === null) {
+    const user = await knex('users').where({ id: tokenData.user_id }).select('deactivated_at').first();
+    if (user?.deactivated_at) {
+      await kv.put(cacheKey, '1', { expirationTtl: 300 });
+      return null;
+    }
+    await kv.put(cacheKey, '0', { expirationTtl: 300 });
+  }
+
+  return tokenData;
 }
 
 export async function requireAuth(req, res, next) {
   const tokenData = await verifyRequest(req);
   if (!tokenData) return res.status(401).json({ error: 'unauthorized' });
+  req.tokenData = tokenData;
+  next();
+}
+
+export async function requireAdmin(req, res, next) {
+  const tokenData = await verifyRequest(req);
+  if (!tokenData) return res.status(401).json({ error: 'unauthorized' });
+  // Always check current role from DB — token/cookie role may be stale after a role change
+  const user = await knex('users').where({ id: tokenData.user_id }).select('role').first();
+  if (!user || user.role !== 'admin') return res.status(403).json({ error: 'forbidden' });
+  tokenData.role = user.role;
   req.tokenData = tokenData;
   next();
 }

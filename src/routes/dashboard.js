@@ -13,6 +13,7 @@ export async function handleDashboard(req, res) {
       knex('sessions as s')
         .leftJoin('users as u', 's.created_by', 'u.id')
         .leftJoin('comments as c', 'c.session_id', 's.id')
+        .whereNull('s.deleted_at')
         .select(
           's.id', 's.title', 's.created_by', 's.created_at', 's.last_updated',
           knex.raw("COALESCE(u.display_name, u.github_username, 'Deleted user') as creator"),
@@ -32,6 +33,7 @@ export async function handleDashboard(req, res) {
     sessions = await knex('sessions as s')
       .leftJoin('users as u', 's.created_by', 'u.id')
       .leftJoin('comments as c', 'c.session_id', 's.id')
+      .whereNull('s.deleted_at')
       .where(function() {
         this.where('s.created_by', tokenData.user_id)
           .orWhereIn('s.id', knex('comments').where('author_id', tokenData.user_id).distinct('session_id'));

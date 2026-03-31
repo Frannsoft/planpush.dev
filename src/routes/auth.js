@@ -10,6 +10,7 @@ import {
 } from '../utils/crypto.js';
 import { escHtml, safeRedirectUrl, BASE_PAGE_CSS } from '../utils/html.js';
 import { setSessionCookie, clearSessionCookie, verifyRequest, signSession, verifySession } from '../middleware/auth.js';
+import { writeAuditLog } from '../utils/audit.js';
 
 const DEVICE_CODE_EXPIRY_MINUTES = 15;
 const ACCESS_TOKEN_EXPIRY_MINUTES = 60;
@@ -145,6 +146,14 @@ export async function handleCallback(req, res) {
     role,
   });
 
+  writeAuditLog(knex, {
+    actorId: userId,
+    action: 'user.login',
+    targetType: 'user',
+    targetId: userId,
+    meta: { github_username: githubUsername, is_new: !existingUser },
+  });
+
   // Redirect
   if (stateData.activate) {
     return res.redirect('/activate');
@@ -223,6 +232,14 @@ export async function handleAuthDeviceToken(req, res) {
 
     if (!issued) return res.status(400).json({ error: 'invalid_request' });
 
+    writeAuditLog(knex, {
+      actorId: user.id,
+      action: 'user.device_auth',
+      targetType: 'user',
+      targetId: user.id,
+      meta: { github_username: user.github_username },
+    });
+
     return res.json({
       refresh_token: refreshToken,
       user: user.github_username,
@@ -244,6 +261,8 @@ export async function handleAuthToken(req, res) {
   const token = await knex('api_tokens as t')
     .join('users as u', 't.user_id', 'u.id')
     .where('t.hashed_token', hashed)
+    .whereNull('t.revoked_at')
+    .whereNull('u.deactivated_at')
     .select('t.id', 't.user_id', 'u.github_user_id', 'u.github_username', 'u.display_name', 'u.role')
     .first();
 

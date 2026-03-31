@@ -58,6 +58,7 @@ export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardL
   const dashboardLink = showDashboardLink ? `
     <a class="pp-header-btn" href="${escHtml(apiOrigin || '')}/dashboard" title="Dashboard">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="pp-menu-label">Dashboard</span>
     </a>` : '';
 
   return `
@@ -69,16 +70,29 @@ export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardL
       </a>
     </div>
     <div id="pp-header-right">
-      <button id="pp-share-btn" class="pp-header-btn" title="Copy link" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+      <button id="pp-comments-btn" class="pp-header-btn pp-header-btn-accent" title="Comments" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span id="pp-comments-btn-label">Comments</span>
+        <span id="pp-comments-btn-badge" style="display:none">0</span>
       </button>
-      <button id="pp-info-btn" class="pp-header-btn" title="Plan info" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-      </button>
-      <span id="pp-header-user">${userName}</span>
-      ${dashboardLink}
-      <button id="pp-logout-btn" class="pp-header-btn" title="Sign out">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <div id="pp-header-actions">
+        <button id="pp-share-btn" class="pp-header-btn" title="Copy link" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          <span class="pp-menu-label">Share</span>
+        </button>
+        <button id="pp-info-btn" class="pp-header-btn" title="Plan info" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span class="pp-menu-label">Plan Info</span>
+        </button>
+        <span id="pp-header-user">${userName}</span>
+        ${dashboardLink}
+        <button id="pp-logout-btn" class="pp-header-btn" title="Sign out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          <span class="pp-menu-label">Sign Out</span>
+        </button>
+      </div>
+      <button id="pp-menu-toggle" class="pp-header-btn pp-menu-toggle" title="Menu" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
     </div>
   </div>`;
@@ -98,9 +112,32 @@ export const HEADER_CSS = `
 .pp-header-btn:hover{background:var(--pp-surface-1,#f6f8fa);color:var(--pp-text,#1a1d23)}
 .pp-header-btn:active{transform:scale(.95)}
 .pp-header-btn svg{width:16px;height:16px;flex-shrink:0}
-@media(max-width:600px){#pp-header-user{display:none}.pp-header-btn{width:40px;height:40px}#pp-header-inner{padding:0 8px}}`;
+.pp-header-btn-accent{width:auto;padding:0 12px;gap:6px;background:var(--pp-accent,#2563eb);color:#fff;font-weight:600;font-size:12px}
+.pp-header-btn-accent:hover{background:var(--pp-accent-hover,#1d4ed8);color:#fff}
+.pp-header-btn-accent svg{stroke:#fff}
+.pp-header-btn-accent.pp-active{background:#fff;color:var(--pp-accent,#2563eb);box-shadow:inset 0 0 0 1.5px var(--pp-accent,#2563eb)}
+.pp-header-btn-accent.pp-active:hover{background:var(--pp-accent-soft,#eff4ff)}
+.pp-header-btn-accent.pp-active svg{stroke:var(--pp-accent,#2563eb)}
+#pp-comments-btn-badge{display:none}
+.pp-menu-label{display:none}
+#pp-header-actions{display:flex;align-items:center;gap:4px}
+.pp-menu-toggle{display:none}
+@media(max-width:600px){
+#pp-header-inner{padding:0 8px}
+#pp-comments-btn-label{display:none}
+#pp-comments-btn-badge{display:inline-block;background:#fff;color:var(--pp-accent,#2563eb);font-size:11px;font-weight:700;min-width:18px;height:18px;line-height:18px;text-align:center;border-radius:9px;padding:0 4px}
+.pp-header-btn-accent{width:auto;padding:0 8px;gap:5px}
+.pp-menu-toggle{display:flex;width:40px;height:40px}
+#pp-header-actions{display:none;position:absolute;top:48px;right:0;flex-direction:column;align-items:stretch;background:var(--pp-bg,#fff);border:1px solid var(--pp-border,#d0d7de);border-top:none;border-radius:0 0 12px 12px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px;min-width:180px;z-index:100002}
+#pp-header-actions.pp-menu-open{display:flex}
+#pp-header-actions .pp-header-btn{width:100%;height:40px;justify-content:flex-start;padding:0 12px;gap:10px;border-radius:8px;font-size:13px}
+#pp-header-actions .pp-header-btn svg{width:16px;height:16px}
+#pp-header-actions .pp-menu-label{display:inline}
+#pp-header-actions #pp-header-user{display:block;padding:8px 12px;font-size:13px;color:var(--pp-text,#1a1d23);font-weight:600;border-bottom:1px solid var(--pp-border,#d0d7de);margin-bottom:2px}
+@media(prefers-color-scheme:dark){#pp-header-actions{box-shadow:0 8px 24px rgba(0,0,0,.4)}}
+}`;
 
-// Logout JS — posts to /auth/logout then redirects
+// Header interaction JS — logout + mobile menu toggle
 export const LOGOUT_JS = `
 (function() {
   var btn = document.getElementById('pp-logout-btn');
@@ -108,4 +145,17 @@ export const LOGOUT_JS = `
     fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' })
       .finally(function() { window.location.href = '/auth/login'; });
   });
+  var menuToggle = document.getElementById('pp-menu-toggle');
+  var actions = document.getElementById('pp-header-actions');
+  if (menuToggle && actions) {
+    menuToggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      actions.classList.toggle('pp-menu-open');
+    });
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#pp-header-actions') && !e.target.closest('#pp-menu-toggle')) {
+        actions.classList.remove('pp-menu-open');
+      }
+    });
+  }
 })();`;

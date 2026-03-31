@@ -13,6 +13,7 @@ export async function handleGetComments(req, res) {
 
   const session = await knex('sessions')
     .where({ id: sessionId })
+    .whereNull('deleted_at')
     .select('id', 'current_version')
     .first();
 
@@ -51,6 +52,7 @@ export async function handlePostComment(req, res) {
 
   const session = await knex('sessions')
     .where({ id: session_id })
+    .whereNull('deleted_at')
     .select('id', 'title', 'current_version')
     .first();
 
@@ -107,6 +109,7 @@ export async function handleResolveComment(req, res) {
   const comment = await knex('comments as c')
     .join('sessions as s', 'c.session_id', 's.id')
     .where('c.id', commentId)
+    .whereNull('s.deleted_at')
     .select('c.id', 'c.session_id', 'c.anchor', 'c.author_id', 's.title')
     .first();
 

@@ -2,7 +2,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { requireAuth, requireAuthOrRedirect } from './middleware/auth.js';
+import { requireAuth, requireAdmin, requireAuthOrRedirect } from './middleware/auth.js';
 import { attachBaseUrl } from './middleware/baseUrl.js';
 import { handleLogin, handleCallback, handleLogout, handleAuthDevice, handleAuthDeviceToken, handleAuthToken, handleActivateGet, handleActivatePost, handleInfo, handleSessionCheck } from './routes/auth.js';
 import { handlePush } from './routes/push.js';
@@ -10,6 +10,8 @@ import { handleServe } from './routes/serve.js';
 import { handleGetComments, handlePostComment, handleResolveComment } from './routes/comments.js';
 import { handleDashboard } from './routes/dashboard.js';
 import { handleSessionInfo } from './routes/sessionInfo.js';
+import { handleDeleteSession, handlePatchUserRole, handleDeactivateUser, handleGetAdminActivity } from './routes/admin.js';
+import { handleListTokens, handleRevokeToken } from './routes/tokens.js';
 import { handleAsset } from './routes/assets.js';
 
 // Validate required env vars at startup
@@ -70,6 +72,16 @@ app.get('/api/comments', requireAuth, handleGetComments);
 app.post('/api/comments', requireAuth, handlePostComment);
 app.patch('/api/comments/:id/resolve', requireAuth, handleResolveComment);
 app.get('/api/sessions/:id/info', requireAuth, handleSessionInfo);
+
+// Admin routes
+app.delete('/api/sessions/:id', requireAdmin, handleDeleteSession);
+app.patch('/api/users/:id/role', requireAdmin, handlePatchUserRole);
+app.patch('/api/users/:id/deactivate', requireAdmin, handleDeactivateUser);
+app.get('/api/admin/activity', requireAdmin, handleGetAdminActivity);
+
+// Token management
+app.get('/api/tokens', requireAuth, handleListTokens);
+app.delete('/api/tokens/:id', requireAuth, handleRevokeToken);
 
 // Static assets
 app.get('/assets/:file', handleAsset);
