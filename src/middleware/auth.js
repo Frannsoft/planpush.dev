@@ -50,6 +50,7 @@ export function clearSessionCookie(res) {
 
 export async function verifyRequest(req) {
   let tokenData = null;
+  let tokenId = null;
 
   // Path 1: Bearer token (CLI device-flow access tokens)
   const authHeader = req.headers.authorization;
@@ -57,6 +58,7 @@ export async function verifyRequest(req) {
     const token = authHeader.slice(7);
     if (token.startsWith('at_')) {
       tokenData = await kv.get(`access_token:${token}`, 'json');
+      if (tokenData) tokenId = tokenData.token_id || null;
     }
   }
 
@@ -68,7 +70,19 @@ export async function verifyRequest(req) {
 
   if (!tokenData) return null;
 
+  // Note: org membership is not re-verified after login. If a user is removed from
+  // the GitHub org, their session/tokens remain valid until expiry or admin deactivation.
+  // Operators should deactivate users in PlanPush when removing them from the org.
+
+  // Check if the underlying refresh token has been revoked (access tokens only)
+  if (tokenId) {
+    const apiToken = await knex('api_tokens').where({ id: tokenId }).select('revoked_at').first();
+    if (!apiToken || apiToken.revoked_at) return null;
+  }
+
   // Check if user is deactivated (cached in KV for 5 min)
+  // Note: if deactivated_at is set out-of-band (e.g. direct DB edit), the cache
+  // will hold '0' (active) for up to 5 minutes before taking effect.
   const cacheKey = `deactivated:${tokenData.user_id}`;
   const cached = await kv.get(cacheKey);
   if (cached === '1') return null;
@@ -105,7 +119,8 @@ export async function requireAdmin(req, res, next) {
 export async function requireAuthOrRedirect(req, res, next) {
   const tokenData = await verifyRequest(req);
   if (!tokenData) {
-    const redirectTo = encodeURIComponent(req.originalUrl || req.path);
+    const raw = req.originalUrl || req.path;
+    const redirectTo = encodeURIComponent(raw.length > 500 ? '/dashboard' : raw);
     return res.redirect(`/auth/login?redirect_to=${redirectTo}`);
   }
   req.tokenData = tokenData;

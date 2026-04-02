@@ -15,6 +15,13 @@ import { writeAuditLog } from '../utils/audit.js';
 const DEVICE_CODE_EXPIRY_MINUTES = 15;
 const ACCESS_TOKEN_EXPIRY_MINUTES = 60;
 
+// Fetch with timeout to prevent hanging on unresponsive external services
+function fetchWithTimeout(url, opts = {}, timeoutMs = 10000) {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), timeoutMs);
+  return fetch(url, { ...opts, signal: ac.signal }).finally(() => clearTimeout(timer));
+}
+
 // --- GET /auth/login ---
 export async function handleLogin(req, res) {
   const redirectTo = req.query.redirect_to || '/dashboard';
@@ -60,7 +67,7 @@ export async function handleCallback(req, res) {
   res.clearCookie('__oauth_state', { path: '/' });
 
   // Exchange code for GitHub access token
-  const tokenResp = await fetch('https://github.com/login/oauth/access_token', {
+  const tokenResp = await fetchWithTimeout('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({
@@ -72,13 +79,14 @@ export async function handleCallback(req, res) {
 
   const tokenData = await tokenResp.json();
   if (tokenData.error || !tokenData.access_token) {
-    return res.status(400).send('GitHub OAuth failed: ' + (tokenData.error_description || tokenData.error || 'unknown'));
+    console.error('[auth] GitHub OAuth error:', tokenData.error, tokenData.error_description);
+    return res.status(400).send('GitHub OAuth failed. Please try again.');
   }
 
   const ghToken = tokenData.access_token;
 
   // Fetch GitHub user profile
-  const userResp = await fetch('https://api.github.com/user', {
+  const userResp = await fetchWithTimeout('https://api.github.com/user', {
     headers: { Authorization: `Bearer ${ghToken}`, Accept: 'application/json', 'User-Agent': 'PlanPush' },
   });
 
@@ -93,7 +101,7 @@ export async function handleCallback(req, res) {
   // Check GitHub org membership
   const orgName = process.env.GITHUB_ORG;
   if (orgName) {
-    const orgResp = await fetch(`https://api.github.com/orgs/${encodeURIComponent(orgName)}/members/${encodeURIComponent(githubUsername)}`, {
+    const orgResp = await fetchWithTimeout(`https://api.github.com/orgs/${encodeURIComponent(orgName)}/members/${encodeURIComponent(githubUsername)}`, {
       headers: { Authorization: `Bearer ${ghToken}`, Accept: 'application/json', 'User-Agent': 'PlanPush' },
     });
 
@@ -163,6 +171,11 @@ export async function handleCallback(req, res) {
 
 // --- POST /auth/logout ---
 export async function handleLogout(req, res) {
+  // Reject cross-origin logout requests (CSRF protection)
+  const origin = req.headers.origin;
+  if (origin && origin !== req.planpushBaseUrl) {
+    return res.status(403).json({ error: 'forbidden' });
+  }
   clearSessionCookie(res);
   res.json({ ok: true });
 }
@@ -282,6 +295,7 @@ export async function handleAuthToken(req, res) {
       github_username: token.github_username,
       display_name: token.display_name || null,
       role: token.role || 'member',
+      token_id: token.id,
     }),
     { expirationTtl: ACCESS_TOKEN_EXPIRY_MINUTES * 60 }
   );
@@ -296,7 +310,10 @@ export async function handleAuthToken(req, res) {
 // --- GET /activate ---
 export async function handleActivateGet(req, res) {
   const tokenData = await verifyRequest(req);
-  res.set('Content-Type', 'text/html; charset=UTF-8').send(getActivatePage(!!tokenData, tokenData?.display_name));
+  res.set({
+    'Content-Type': 'text/html; charset=UTF-8',
+    'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'",
+  }).send(getActivatePage(!!tokenData, tokenData?.display_name));
 }
 
 // --- POST /activate ---

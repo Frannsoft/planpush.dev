@@ -10,6 +10,6 @@ export function writeAuditLog(knex, { actorId, action, targetType, targetId, met
         target_id: targetId || null,
         meta: meta ? JSON.stringify(meta) : null,
       })
-      .catch((err) => console.error('[audit]', err.message));
+      .catch((err) => console.error('[audit] WRITE FAILED:', err));
   });
 }

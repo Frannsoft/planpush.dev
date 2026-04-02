@@ -20,18 +20,35 @@ if (!process.env.SECRET_KEY || process.env.SECRET_KEY.length < 32) {
 }
 if (!process.env.GITHUB_CLIENT_ID) throw new Error('GITHUB_CLIENT_ID environment variable is required');
 if (!process.env.GITHUB_CLIENT_SECRET) throw new Error('GITHUB_CLIENT_SECRET environment variable is required');
+if (!process.env.GITHUB_ORG) throw new Error('GITHUB_ORG environment variable is required');
 
 const app = express();
 
-// Global security headers
+// Trust first proxy (nginx, Caddy, Docker) so rate limiter keys on real client IP
+app.set('trust proxy', 1);
+
+// Global security headers with default CSP for non-plan pages
 app.use(helmet({
-  contentSecurityPolicy: false, // CSP set per-page where HTML is returned
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "data:", "https:"],
+      objectSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
   crossOriginEmbedderPolicy: false,
 }));
 
 // Body parsing
-app.use(express.json({ limit: '10mb' }));
-app.use(express.text({ type: 'text/html', limit: '10mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.text({ type: 'text/html', limit: '4mb' }));
 app.use(cookieParser());
 
 // Attach baseUrl to every request
@@ -45,6 +62,23 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'too_many_requests' },
 });
+// Separate higher-limit rate limiter for device code polling (RFC 8628 polls every 5s)
+const devicePollLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'too_many_requests' },
+});
+// Per-user push rate limit
+const pushLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'too_many_requests' },
+});
+app.use('/api/auth/device/token', devicePollLimiter);
 app.use('/api/auth/', authLimiter);
 app.use('/activate', authLimiter);
 app.use('/auth/', authLimiter);
@@ -67,7 +101,7 @@ app.get('/api/info', handleInfo);
 app.get('/api/auth/session', handleSessionCheck);
 
 // Core routes (authenticated)
-app.post('/api/push', requireAuth, handlePush);
+app.post('/api/push', requireAuth, pushLimiter, handlePush);
 app.get('/api/comments', requireAuth, handleGetComments);
 app.post('/api/comments', requireAuth, handlePostComment);
 app.patch('/api/comments/:id/resolve', requireAuth, handleResolveComment);

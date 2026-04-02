@@ -22,8 +22,8 @@ async function shutdown() {
     await knex.destroy();
     process.exit(0);
   });
-  // Force exit after 10s if connections don't close
-  setTimeout(() => process.exit(1), 10000);
+  // Force exit after 10s if connections don't close (intentional, not a crash)
+  setTimeout(() => process.exit(0), 10000);
 }
 
 process.on('SIGTERM', shutdown);

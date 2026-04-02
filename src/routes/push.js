@@ -12,6 +12,10 @@ export async function handlePush(req, res) {
 
   const rawHtml = req.body;
 
+  if (typeof rawHtml !== 'string') {
+    return res.status(400).json({ error: 'content_type_must_be_text_html' });
+  }
+
   if (!rawHtml || rawHtml.length === 0) {
     return res.status(400).json({ error: 'empty_body' });
   }
@@ -70,10 +74,9 @@ export async function handlePush(req, res) {
     sessionId = generateSessionId();
     currentVersion = 1;
 
-    // Extract title from HTML <title> tag if present, decode HTML entities
+    // Extract title from HTML <title> tag if present (stored entity-encoded as-is for safety)
     const titleMatch = html.match(/<title>([^<]*)<\/title>/i);
-    const rawTitle = titleMatch ? titleMatch[1].trim().slice(0, 200) : 'Untitled Plan';
-    sessionTitle = rawTitle.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+    sessionTitle = titleMatch ? titleMatch[1].trim().slice(0, 200) : 'Untitled Plan';
 
     await knex.transaction(async (trx) => {
       await trx('sessions').insert({

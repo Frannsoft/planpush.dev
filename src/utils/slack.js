@@ -65,11 +65,14 @@ export async function notifySlack({ event, sessionId, sessionTitle, author, cont
   }
 
   try {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), 10000);
     await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, blocks }),
-    });
+      signal: ac.signal,
+    }).finally(() => clearTimeout(timer));
   } catch (err) {
     console.error('Slack notification failed:', err.message);
   }

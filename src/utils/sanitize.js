@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 
-const REMOVE_ELEMENTS = ['script', 'iframe', 'object', 'embed', 'applet', 'base', 'noscript', 'form'];
+const REMOVE_ELEMENTS = ['script', 'iframe', 'object', 'embed', 'applet', 'base', 'noscript', 'form', 'style'];
 const SAFE_LINK_RELS = new Set(['stylesheet', 'preload', 'icon', 'shortcut icon', 'apple-touch-icon', 'preconnect', 'dns-prefetch']);
 const DANGEROUS_URI_ATTRS = new Set(['href', 'src', 'action', 'formaction']);
 const DANGEROUS_URI_SCHEMES = /^\s*(javascript|vbscript|data\s*:)/i;
