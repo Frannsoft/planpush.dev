@@ -629,6 +629,29 @@ code{
 .plan-checklist li::before{content:'\2610'; color: var(--pp-text-faint)}
 .plan-checklist li.checked::before{content:'\2611'; color: var(--pp-success)}
 
+/* ===== Diagrams (SVG) ===== */
+.plan-diagram{
+  background: var(--pp-surface-1);
+  border: 1px solid var(--pp-border);
+  border-radius: var(--pp-radius);
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--pp-shadow-sm);
+  overflow-x: auto;
+}
+.plan-diagram svg{
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+}
+.plan-diagram-caption{
+  font-size: 13px;
+  color: var(--pp-text-muted);
+  text-align: center;
+  margin-top: 12px;
+}
+
 /* ===== Separator ===== */
 .plan-divider{
   border: none;

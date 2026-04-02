@@ -183,63 +183,107 @@ Check the project root `.gitignore` (or create one if it doesn't exist). If eith
 
 ---
 
-## 5. Determine context and generate HTML
+## 5. Load class reference and generate HTML
 
-Scan the conversation history for the most recent message that contains a prior `/p/` URL from the server — this marks the last push.
+**First push only** — read the CSS class reference. Look for it in the same directory as this command file:
 
-**First push** (no prior URL found):
-- Read the full conversation
-- Generate `{plans_dir}/pushplan_{session-name}.html` from scratch
+  find ~/.claude -name planpush-classes.md -path "*/planpush/*" 2>/dev/null | head -1 | xargs cat 2>/dev/null
 
-**Subsequent push** (prior URL found):
-- Read the current `{plans_dir}/pushplan_{session-name}.html`
-- Read only messages after the last push marker
-- Identify what has changed: new components, updated flows, new entities, new UI, resolved questions, new decisions
-- Update only the changed sections — do not regenerate what has not changed
+This file documents every available CSS class and SVG theming variable. If the file cannot be found, proceed using the class names listed in the HTML structure guidance below. On subsequent pushes you already know the classes.
 
-Write `{plans_dir}/pushplan_{session-name}.html` as a plain HTML file with **no inline `<style>` or `<script>` tags**. The server injects `plan.css` (styling) and `plan.js` (tab switching, anchor scrolling) automatically with CSP nonces.
+**Determine what to generate:**
 
-**HTML structure:**
-- Standard `<!DOCTYPE html>` with `<meta charset>` and `<meta viewport>`
-- Body wrapped in `<div class="plan-wrapper">`
-- Header: `<div class="plan-header">` with `<h1>` title and `<div class="plan-meta">` for metadata/badges
-- Tabs: `<div class="plan-tabs">` containing `<button class="plan-tab" data-tab="...">` elements — first tab gets class `active`
-- Panes: `<div class="plan-pane" data-pane="...">` for each tab — first pane gets class `active`
-- Use tabs to organize sections when the plan is complex enough to warrant it
+Scan the conversation for the most recent `/p/` URL from the server — this marks the last push.
 
-**CSS class reference** (provided by the server's `plan.css`):
-- Layout: `plan-wrapper`, `plan-header`, `plan-meta`, `plan-tabs`, `plan-tab`, `plan-pane`, `plan-section`, `plan-divider`
-- Cards: `plan-card` (general), `plan-component` (architecture boxes), `plan-entity` (data models), `plan-flow` (sequence flows), `plan-decision` (decision entries), `plan-tier` (pricing tiers), `plan-mockup` (UI mockups), `plan-integration` (integration blocks)
-- Grid: `plan-grid plan-grid-2` (2-col), `plan-grid-3` (3-col), `plan-columns`
-- Tables: `plan-table` with standard `<thead>/<tbody>/<tr>/<th>/<td>`
-- Entity fields: `plan-entity-header`, `plan-entity-body`, `plan-entity-field` with `field-name`, `field-type`, `field-pk`, `field-fk` spans
-- Flow steps: `plan-flow-steps`, `plan-flow-step`, `plan-flow-num`, `plan-flow-content`
-- Horizontal flow: `plan-flow-horizontal`, `plan-flow-box`, `plan-flow-arrow`
-- Decisions: `plan-decision` with `decision-status decided` or `decision-status open` spans
-- Badges: `plan-badge`, `plan-badge-accent`, `plan-badge-success`, `plan-badge-warning`, `plan-badge-danger`
-- Notes: `plan-note plan-note-info` (or `-warning`, `-success`, `-danger`)
-- Code: `plan-code` for blocks, `<code>` for inline
-- Lists: `plan-list`, `plan-checklist` (with `.checked` on items)
-- Mockups: `plan-mockup`, `plan-mockup-bar`, `plan-mockup-dot` (x3), `plan-mockup-url`, `plan-mockup-body`
-- Utility: `text-muted`, `text-accent`, `text-sm`, `text-xs`, `font-bold`, `mt-0`/`mt-1`/`mt-2`/`mt-3`, `mb-0`/`mb-1`/`mb-2`/`mb-3`
+- **First push** (no prior URL): Read the full conversation. Generate the HTML from scratch.
+- **Subsequent push** (prior URL found): Read the current HTML file and only messages since the last push. Update changed sections — don't regenerate unchanged content.
 
-**Content — include what is relevant from the conversation:**
-- Architecture components and their relationships
+**Write `{plans_dir}/pushplan_{session-name}.html`** as plain HTML — **no inline `<style>` or `<script>` tags**. The server injects `plan.css` and `plan.js` automatically.
+
+### HTML structure
+
+```
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>{Plan Title}</title></head>
+<body>
+<div class="plan-wrapper">
+  <div class="plan-header"><h1>...</h1><div class="plan-meta">...</div></div>
+  <!-- tabs if multiple sections -->
+  <div class="plan-tabs">
+    <button class="plan-tab active" data-tab="overview">Overview</button>
+    ...
+  </div>
+  <div class="plan-pane active" data-pane="overview">...</div>
+  ...
+</div>
+</body>
+</html>
+```
+
+Use tabs only when the plan has enough content to warrant them. Simple plans can skip tabs.
+
+### Content — include what's relevant
+
+- Architecture components and relationships
 - Data models and entities
 - User flows and sequences
 - API surface or key interfaces
-- Decisions made and rationale
-- Open questions still unresolved
-- For any UI screens or components being discussed, render an HTML/CSS mockup using `plan-mockup` classes — no images
-- No auto-refresh, no external CDN links
+- Decisions made (with rationale) and open questions
+- UI mockups using `plan-mockup` classes
 
-**Each major element must have a stable anchor ID:**
+### Visual diagrams
+
+When the conversation involves architecture, flows, state machines, or relationships between components, **render them as inline SVG diagrams** inside `<div class="plan-diagram">`. Diagrams communicate structure far more effectively than prose.
+
+Use CSS custom properties for theming so diagrams match light/dark mode:
+
+```svg
+<svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Always define markers/symbols first -->
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+      markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--pp-accent)"/>
+    </marker>
+  </defs>
+
+  <!-- Box -->
+  <rect x="50" y="40" width="140" height="50" rx="8"
+    fill="var(--pp-surface-2)" stroke="var(--pp-border)" stroke-width="1.5"/>
+  <text x="120" y="70" text-anchor="middle"
+    fill="var(--pp-text)" font-family="var(--pp-font)" font-size="14" font-weight="600">
+    API Gateway
+  </text>
+
+  <!-- Arrow -->
+  <line x1="190" y1="65" x2="260" y2="65"
+    stroke="var(--pp-accent)" stroke-width="1.5" marker-end="url(#arrow)"/>
+</svg>
+```
+
+**Diagram patterns:**
+
+- **Architecture layers**: Stacked rows of rounded boxes with arrows showing data flow between layers. Group by layer (Client → API → Service → DB).
+- **Flowcharts**: Rounded-rect steps connected by arrows. Use diamonds (rotated squares) for decision points. Color-code: accent for normal flow, success for happy path, danger for error paths.
+- **State machines**: Circles/rounded-rects for states, arrows for transitions labeled with events. Double-circle for terminal states. Fill active/initial state with `--pp-accent-soft`.
+- **ER diagrams**: Entity boxes (like `plan-entity` but in SVG) with lines between them showing relationships. Label cardinality (1:N, M:N) on the lines.
+- **Sequence diagrams**: Vertical lifelines with horizontal arrows between participants. Label each arrow with the message/call.
+
+Keep SVGs at reasonable dimensions (400-800px wide, scale height to content). Use `viewBox` so they scale responsively.
+
+### Anchor IDs
+
+Every major element must have a stable anchor ID:
 
   data-anchor="component-AuthService"
   data-anchor="flow-Login"
   data-anchor="entity-User"
+  data-anchor="diagram-Architecture"
 
-**User direction:**
+### User direction
+
 If $ARGUMENTS is not empty, treat it as editorial direction for this run.
 Use it to influence what gets emphasized, added, or focused on. Examples:
   /planpush focus on the data model
