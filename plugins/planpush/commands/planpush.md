@@ -48,8 +48,9 @@ Run:
 
 Parse the JSON response:
 - `device_code` — used to poll for completion (never shown to user)
-- `user_code` — shown to user
-- `verification_uri` — URL user opens to complete auth
+- `user_code` — shown to user (fallback only)
+- `verification_uri_complete` — URL that auto-fills the code (preferred)
+- `verification_uri` — base URL without code (fallback)
 - `expires_in` — seconds until the code expires
 - `interval` — polling interval in seconds (default: 5)
 
@@ -61,10 +62,9 @@ Then stop.
 
 Print:
 
-  Open this URL in your browser and enter the code below:
+  Open this link to authorize:
 
-    URL:  {verification_uri}
-    Code: {user_code}
+    {verification_uri_complete}
 
   Waiting for authentication...
 

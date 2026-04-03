@@ -129,7 +129,7 @@ export async function handleCallback(req, res) {
     // Atomic first-user-becomes-admin: transaction prevents race where two simultaneous
     // signups both see count=0 and both get admin
     userId = randomUUID();
-    role = await knex.transaction({ isolationLevel: 'serializable' }, async (trx) => {
+    role = await knex.transaction(async (trx) => {
       const countRow = await trx('users').count('id as c').first();
       const c = parseInt(countRow.c, 10);
       const r = c === 0 ? 'admin' : 'member';
@@ -198,6 +198,7 @@ export async function handleAuthDevice(req, res) {
     device_code: deviceCode,
     user_code: userCode,
     verification_uri: `${baseUrl}/activate`,
+    verification_uri_complete: `${baseUrl}/activate?code=${encodeURIComponent(userCode)}`,
     expires_in: DEVICE_CODE_EXPIRY_MINUTES * 60,
     interval: 5,
   });
@@ -402,37 +403,45 @@ function getActivatePage(isSignedIn, displayName) {
     </form>
     <div id="form-error" class="error" style="display:none;margin-top:12px;"></div>
     <script>
-    document.getElementById('activate-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('submit-btn');
-      const errDiv = document.getElementById('form-error');
+    async function submitCode(code) {
+      var btn = document.getElementById('submit-btn');
+      var errDiv = document.getElementById('form-error');
       errDiv.style.display = 'none';
       btn.disabled = true;
       btn.textContent = 'Authorizing...';
       try {
-        const code = document.getElementById('user_code').value;
-        const resp = await fetch('/activate', {
+        var resp = await fetch('/activate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
           body: JSON.stringify({ user_code: code }),
         });
         if (resp.ok) {
-          const html = await resp.text();
+          var html = await resp.text();
           document.open(); document.write(html); document.close();
           return;
         }
-        const err = await resp.json().catch(() => ({}));
+        var err = await resp.json().catch(function() { return {}; });
         errDiv.textContent = err.error || 'Authorization failed. Try again.';
         errDiv.style.display = 'block';
-      } catch {
+      } catch(e) {
         errDiv.textContent = 'Something went wrong. Please try again.';
         errDiv.style.display = 'block';
       } finally {
         btn.disabled = false;
         btn.textContent = 'Authorize';
       }
+    }
+    document.getElementById('activate-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      submitCode(document.getElementById('user_code').value);
     });
+    // Auto-fill and auto-submit if code is in the URL
+    var urlCode = new URLSearchParams(window.location.search).get('code');
+    if (urlCode) {
+      document.getElementById('user_code').value = urlCode;
+      submitCode(urlCode);
+    }
     </script>
   ` : `
     <p>Sign in with GitHub to authorize your device.</p>
