@@ -307,6 +307,7 @@ Read the HTML file and push it:
   curl -s -X POST {server_url}/api/push \
     -H "Authorization: Bearer {access_token}" \
     -H "Content-Type: text/html" \
+    -H "X-Session-Name: {session-name}" \
     --data-binary @{plans_dir}/pushplan_{session-name}.html
 
 **Subsequent push** (has `{existing_session_id}`):

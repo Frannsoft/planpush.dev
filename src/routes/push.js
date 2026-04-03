@@ -30,8 +30,8 @@ export async function handlePush(req, res) {
   let sessionTitle;
 
   if (existingSessionId) {
-    // Validate session ID format
-    if (!/^sess_[0-9a-f]{12}$/.test(existingSessionId)) {
+    // Validate session ID format: sess_<hex> (legacy) or slug-style name
+    if (!/^(sess_[0-9a-f]{12}|[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?)$/.test(existingSessionId)) {
       return res.status(400).json({ error: 'invalid_session_id' });
     }
 
@@ -71,7 +71,20 @@ export async function handlePush(req, res) {
     });
   } else {
     // Create new session
-    sessionId = generateSessionId();
+    const sessionName = (req.headers['x-session-name'] || '').trim().toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 64);
+
+    if (sessionName && /^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$/.test(sessionName)) {
+      // Check for name collision
+      const existing = await knex('sessions').where({ id: sessionName }).select('id').first();
+      if (existing) {
+        return res.status(409).json({ error: 'session_name_taken', message: `The name "${sessionName}" is already in use.` });
+      }
+      sessionId = sessionName;
+    } else {
+      sessionId = generateSessionId();
+    }
+
     currentVersion = 1;
 
     // Extract title from HTML <title> tag if present (stored entity-encoded as-is for safety)
