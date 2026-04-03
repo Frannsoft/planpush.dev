@@ -140,27 +140,24 @@ If this succeeds, use the result as `{repo_root}` and set `{plans_dir}` to `{rep
 
 If it fails (no git repo), set `{plans_dir}` to `./pushplans` (relative to the current working directory).
 
-Next, resolve the session name.
+Next, resolve the session name. Use the **first matching rule**:
 
-Check if this is a subsequent push (step 3 will confirm, but peek ahead here):
+1. **$ARGUMENTS contains `name:`** — extract everything after `name:` up to the next recognized prefix or end of string. Sanitize it (see below). The remainder of $ARGUMENTS (if any) is still used as editorial direction in step 5.
+   Examples: `/planpush name: auth-redesign`, `/planpush name: Auth Redesign focus on the data model`
 
-  cat .claude/plan-session-$CLAUDE_SESSION_ID 2>/dev/null
+2. **Subsequent push** — use the Read tool (not Bash) to silently read `.claude/plan-session-$CLAUDE_SESSION_ID`. If it contains a non-empty string, this is a subsequent push — find the existing `pushplan_*.html` file in `{plans_dir}` and reuse its `{session-name}`. Skip the name prompt.
 
-If that file exists and contains a non-empty string, this is a subsequent push — find the existing `pushplan_*.html` file in `{plans_dir}` that was used previously and reuse its `{session-name}`. Skip the name prompt below.
+3. **First push, no name given** — ask the user:
 
-**First push only** — ask the user:
+     What would you like to name this doc? (e.g., "auth-redesign", "dashboard-v2")
 
-  What would you like to name this doc? (press Enter to skip)
+   If the user provides a name, sanitize it. If they leave it blank or skip, generate a random name from 3 common English words joined by hyphens (e.g. `coral-bridge-fern`).
 
-If the user provides a name, sanitize it for use as a filename:
+**Sanitization rules** (apply to any user-provided name):
 - Lowercase
 - Replace spaces and special characters with hyphens
 - Collapse consecutive hyphens into one
 - Trim leading/trailing hyphens
-
-Use the sanitized result as `{session-name}`.
-
-If the user leaves it blank or skips, pick 3 random common English words (simple, everyday words like "coral", "bridge", "fern", "quiet", "maple", "drift") and join them with hyphens. Use that as `{session-name}` (e.g. `coral-bridge-fern`).
 
 The local output file will be: `{plans_dir}/pushplan_{session-name}.html`
 
@@ -168,7 +165,7 @@ The local output file will be: `{plans_dir}/pushplan_{session-name}.html`
 
 ## 3. Check for existing server session
 
-  cat .claude/plan-session-$CLAUDE_SESSION_ID 2>/dev/null
+Use the Read tool (not Bash) to silently read `.claude/plan-session-$CLAUDE_SESSION_ID`.
 
 If the file exists and contains a non-empty string, store it as `{existing_session_id}`.
 This is a subsequent push — the server will overwrite the existing session.
@@ -291,11 +288,11 @@ Every major element must have a stable anchor ID:
 
 ### User direction
 
-If $ARGUMENTS is not empty, treat it as editorial direction for this run.
+If $ARGUMENTS is not empty, treat it as editorial direction for this run (after stripping any `name:` prefix that was already consumed in step 2).
 Use it to influence what gets emphasized, added, or focused on. Examples:
   /planpush focus on the data model
   /planpush add a mockup for the dashboard
-  /planpush mark the auth flow as decided
+  /planpush name: auth-redesign focus on the login flow
 
 ---
 
