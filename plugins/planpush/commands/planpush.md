@@ -142,20 +142,25 @@ If it fails (no git repo), set `{plans_dir}` to `./pushplans` (relative to the c
 
 Next, resolve the session name.
 
-  echo $CLAUDE_SESSION_NAME
+Check if this is a subsequent push (step 3 will confirm, but peek ahead here):
 
-If non-empty, sanitize for use as a filename:
+  cat .claude/plan-session-$CLAUDE_SESSION_ID 2>/dev/null
+
+If that file exists and contains a non-empty string, this is a subsequent push — find the existing `pushplan_*.html` file in `{plans_dir}` that was used previously and reuse its `{session-name}`. Skip the name prompt below.
+
+**First push only** — ask the user:
+
+  What would you like to name this doc? (press Enter to skip)
+
+If the user provides a name, sanitize it for use as a filename:
 - Lowercase
 - Replace spaces and special characters with hyphens
+- Collapse consecutive hyphens into one
 - Trim leading/trailing hyphens
 
-Use the result as `{session-name}`.
+Use the sanitized result as `{session-name}`.
 
-If empty, run:
-
-  echo $CLAUDE_SESSION_ID
-
-Use the result as `{session-name}`.
+If the user leaves it blank or skips, pick 3 random common English words (simple, everyday words like "coral", "bridge", "fern", "quiet", "maple", "drift") and join them with hyphens. Use that as `{session-name}` (e.g. `coral-bridge-fern`).
 
 The local output file will be: `{plans_dir}/pushplan_{session-name}.html`
 
@@ -199,6 +204,8 @@ Scan the conversation for the most recent `/p/` URL from the server — this mar
 - **Subsequent push** (prior URL found): Read the current HTML file and only messages since the last push. Update changed sections — don't regenerate unchanged content.
 
 **Write `{plans_dir}/pushplan_{session-name}.html`** as plain HTML — **no inline `<style>` or `<script>` tags**. The server injects `plan.css` and `plan.js` automatically.
+
+Use `{session-name}` as the `<title>` of the HTML document, converted to title case (e.g. `coral-bridge-fern` → `Coral Bridge Fern`, `auth-redesign` → `Auth Redesign`). Also use it as the `<h1>` in the plan header. If the plan content suggests a more descriptive title, you may use that instead, but default to the session name.
 
 ### HTML structure
 
