@@ -229,7 +229,13 @@ export async function handleAuthDeviceToken(req, res) {
       .select('id', 'github_user_id', 'github_username', 'display_name', 'role')
       .first();
 
-    if (!user) return res.status(400).json({ error: 'user_not_found' });
+    if (!user) {
+      const base = req.planpushBaseUrl || process.env.BASE_URL || '';
+      return res.status(400).json({
+        error: 'user_not_found',
+        message: `GitHub user not found. Please sign in at ${base}/auth/login first.`,
+      });
+    }
 
     // Atomic: delete device code + issue refresh token in one transaction
     // Prevents double-redemption if CLI polls twice concurrently

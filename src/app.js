@@ -83,6 +83,9 @@ app.use('/api/auth/', authLimiter);
 app.use('/activate', authLimiter);
 app.use('/auth/', authLimiter);
 
+// Root redirect
+app.get('/', (req, res) => res.redirect('/dashboard'));
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
