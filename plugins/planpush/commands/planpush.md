@@ -140,18 +140,20 @@ If this succeeds, use the result as `{repo_root}` and set `{plans_dir}` to `{rep
 
 If it fails (no git repo), set `{plans_dir}` to `./pushplans` (relative to the current working directory).
 
-Next, resolve the session name. Use the **first matching rule**:
+Next, resolve the session name.
+
+**Check if this is a subsequent push first.** Use the Read tool (not Bash) to read `.claude/plan-session-$CLAUDE_SESSION_ID`. If the file exists and contains a non-empty string, this is a subsequent push — find the existing `pushplan_*.html` file in `{plans_dir}` and reuse its `{session-name}`. Skip the rest of this step.
+
+**First push — resolve the name.** If the session file does not exist, is empty, or the Read tool returns an error, this is a first push. Determine the name using the **first matching rule**:
 
 1. **$ARGUMENTS contains `name:`** — extract everything after `name:` up to the next recognized prefix or end of string. Sanitize it (see below). The remainder of $ARGUMENTS (if any) is still used as editorial direction in step 5.
    Examples: `/planpush name: auth-redesign`, `/planpush name: Auth Redesign focus on the data model`
 
-2. **Subsequent push** — use the Read tool (not Bash) to silently read `.claude/plan-session-$CLAUDE_SESSION_ID`. If it contains a non-empty string, this is a subsequent push — find the existing `pushplan_*.html` file in `{plans_dir}` and reuse its `{session-name}`. Skip the name prompt.
-
-3. **First push, no name given** — ask the user:
+2. **No name in arguments — you MUST ask the user before proceeding.** Do not skip this. Do not generate a random name without asking. Prompt:
 
      What would you like to name this doc? (e.g., "auth-redesign", "dashboard-v2")
 
-   If the user provides a name, sanitize it. If they leave it blank or skip, generate a random name from 3 common English words joined by hyphens (e.g. `coral-bridge-fern`).
+   Wait for the user to respond. If they provide a name, sanitize it. Only if they explicitly leave it blank, skip, or say they don't care, generate a random name from 3 common English words joined by hyphens (e.g. `coral-bridge-fern`).
 
 **Sanitization rules** (apply to any user-provided name):
 - Lowercase
