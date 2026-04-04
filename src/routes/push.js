@@ -72,11 +72,19 @@ export async function handlePush(req, res) {
       return row.current_version;
     });
   } else {
-    // Create new session
-    const sessionName = (req.headers['x-session-name'] || '').trim().toLowerCase()
+    // Create new session — derive slug from header, falling back to HTML <title>
+    const slugify = (str) => (str || '').trim().toLowerCase()
       .replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 64);
+    const isValidSlug = (s) => s && /^[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?$/.test(s);
 
-    if (sessionName && /^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$/.test(sessionName)) {
+    let sessionName = slugify(req.headers['x-session-name']);
+    if (!isValidSlug(sessionName)) {
+      // Fallback: derive slug from HTML <title>
+      const titleMatch = html.match(/<title>([^<]*)<\/title>/i);
+      if (titleMatch) sessionName = slugify(titleMatch[1]);
+    }
+
+    if (isValidSlug(sessionName)) {
       // Check for name collision
       const existing = await knex('sessions').where({ id: sessionName }).select('id').first();
       if (existing) {
