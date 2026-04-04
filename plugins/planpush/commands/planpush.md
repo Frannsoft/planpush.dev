@@ -132,19 +132,23 @@ Store the `access_token` for use in step 6.
 
 ## 2. Resolve output directory and session name
 
+### 2a. Resolve output directory
+
 Determine the plan output directory:
 
-  git rev-parse --show-toplevel 2>/dev/null
+  git rev-parse --show-toplevel 2>/dev/null || echo ""
 
-If this succeeds, use the result as `{repo_root}` and set `{plans_dir}` to `{repo_root}/pushplans`.
+If this returns a non-empty path, use it as `{repo_root}` and set `{plans_dir}` to `{repo_root}/pushplans`.
 
-If it fails (no git repo), set `{plans_dir}` to `./pushplans` (relative to the current working directory).
+If it returns empty or fails (no git repo), set `{plans_dir}` to `./pushplans` (relative to the current working directory).
 
-Next, resolve the session name.
+### 2b. Check for subsequent push
 
-**Check if this is a subsequent push first.** Use the Read tool (not Bash) to read `.claude/plan-session-$CLAUDE_SESSION_ID`. If the file exists and contains a non-empty string, this is a subsequent push — find the existing `pushplan_*.html` file in `{plans_dir}` and reuse its `{session-name}`. Skip the rest of this step.
+Use the Read tool (not Bash) to read `.claude/plan-session-$CLAUDE_SESSION_ID`. If the file exists and contains a non-empty string, this is a subsequent push — find the existing `pushplan_*.html` file in `{plans_dir}` and reuse its `{session-name}`. Skip step 2c entirely.
 
-**First push — resolve the name.** If the session file does not exist, is empty, or the Read tool returns an error, this is a first push. Determine the name using the **first matching rule**:
+### 2c. First push — resolve the name
+
+If the session file does not exist, is empty, or the Read tool returns an error, this is a first push. Determine the name using the **first matching rule**:
 
 1. **$ARGUMENTS contains `name:`** — extract everything after `name:` up to the next recognized prefix or end of string. Sanitize it (see below). The remainder of $ARGUMENTS (if any) is still used as editorial direction in step 5.
    Examples: `/planpush name: auth-redesign`, `/planpush name: Auth Redesign focus on the data model`
