@@ -11,6 +11,7 @@ import { handleGetComments, handlePostComment, handleResolveComment } from './ro
 import { handleDashboard } from './routes/dashboard.js';
 import { handleSessionInfo } from './routes/sessionInfo.js';
 import { handleDeleteSession, handlePatchUserRole, handleDeactivateUser, handleGetAdminActivity } from './routes/admin.js';
+import { handleArchiveSession, handleRecordViews } from './routes/dashboardActions.js';
 import { handleListTokens, handleRevokeToken } from './routes/tokens.js';
 import { handleAsset } from './routes/assets.js';
 
@@ -115,6 +116,10 @@ app.delete('/api/sessions/:id', requireAdmin, handleDeleteSession);
 app.patch('/api/users/:id/role', requireAdmin, handlePatchUserRole);
 app.patch('/api/users/:id/deactivate', requireAdmin, handleDeactivateUser);
 app.get('/api/admin/activity', requireAdmin, handleGetAdminActivity);
+
+// Dashboard actions
+app.patch('/api/sessions/:id/archive', requireAuth, handleArchiveSession);
+app.post('/api/dashboard/views', requireAuth, handleRecordViews);
 
 // Token management
 app.get('/api/tokens', requireAuth, handleListTokens);

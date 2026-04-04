@@ -86,8 +86,10 @@ Server runs on port 3000. Requires `.env` (see `.env.example`).
 - `POST /api/auth/token` → exchange refresh token for access token
 - `GET /activate` / `POST /activate` → device code activation page
 - `POST /api/push` → push HTML doc (accepts `X-Session-Name` for named URLs, `X-Session-Id` for updates)
+- `PATCH /api/sessions/:id/archive` → toggle session archive (owner or admin)
+- `POST /api/dashboard/views` → record session views for "new since last visit" badges
 - `GET /p/:sessionId` → view a plan (supports `?v=N` for old versions)
-- `GET /dashboard` → user dashboard
+- `GET /dashboard` → user dashboard (role-scoped: members see own sessions/comments, admins see all)
 - `GET /health` → health check
 
 ## Session IDs
@@ -98,6 +100,18 @@ Session IDs double as URL slugs. Two formats:
 
 Validation regex: `/^(sess_[0-9a-f]{12}|[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?)$/`
 Name collisions return HTTP 409.
+
+## Dashboard
+
+- Modular architecture under `src/dashboard/`: `queries.js` (DB), `sections.js` (HTML renderers), `css.js` (styles), `client.js` (client-side JS), `page.js` (assembler)
+- `src/routes/dashboard.js` is a thin shim that calls `fetchDashboardData()` and `dashboardPage()`
+- `src/routes/dashboardActions.js` handles archive toggle and session view recording
+- Role-scoped: members see own sessions + sessions they commented on; admins see everything
+- Client-side search, filter, sort, and pagination (no server round-trips for these)
+- Tab-based UI: Sessions, Activity, My Comments, API Tokens, [admin: Members, Integrations]
+- Session archiving: `archived_at` column, toggleable by owner or admin, hidden from default view
+- "New since last visit" badges: `session_views` table tracks per-user last-viewed timestamp per session
+- Activity feed uses existing `audit_log` table, scoped by role
 
 ## Key Patterns
 
