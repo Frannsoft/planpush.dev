@@ -53,7 +53,7 @@ export const BASE_PAGE_CSS = `
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }`;
 
 // Build reusable header bar HTML
-export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardLink = true }) {
+export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardLink = true, canPublish = false, isPrivate = false }) {
   const userName = displayName ? escHtml(displayName) : (userId ? escHtml(userId) : '');
   const dashboardLink = showDashboardLink ? `
     <a class="pp-header-btn" href="${escHtml(apiOrigin || '')}/dashboard" title="Dashboard">
@@ -68,6 +68,7 @@ export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardL
         <img src="/assets/logo.png" alt="PlanPush" width="22" height="22" style="flex-shrink:0">
         PlanPush
       </a>
+      ${isPrivate ? `<span id="pp-private-badge" style="display:none"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Private</span>` : ''}
     </div>
     <div id="pp-header-right">
       <button id="pp-comments-btn" class="pp-header-btn pp-header-btn-accent" title="Comments" style="display:none">
@@ -75,6 +76,10 @@ export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardL
         <span id="pp-comments-btn-label">Comments</span>
         <span id="pp-comments-btn-badge" style="display:none">0</span>
       </button>
+      ${canPublish ? `<button id="pp-publish-btn" class="pp-header-btn" title="Publish plan" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+        <span id="pp-publish-btn-label">Publish</span>
+      </button>` : ''}
       <div id="pp-header-actions">
         <button id="pp-share-btn" class="pp-header-btn" title="Copy link" style="display:none">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
@@ -106,6 +111,8 @@ export const HEADER_CSS = `
 #pp-header-left{display:flex;align-items:center;gap:10px}
 #pp-header-logo{display:flex;align-items:center;gap:7px;font-weight:700;font-size:14px;color:var(--pp-text,#1a1d23);text-decoration:none;letter-spacing:-0.01em;transition:opacity .15s}
 #pp-header-logo:hover{opacity:.7}
+#pp-private-badge{display:inline-flex;align-items:center;gap:4px;background:#f3e8ff;color:#7c3aed;font-size:11px;font-weight:600;padding:2px 8px 2px 6px;border-radius:20px;margin-left:8px;white-space:nowrap}
+@media(prefers-color-scheme:dark){#pp-private-badge{background:#2e1065;color:#c4b5fd}}
 #pp-header-right{display:flex;align-items:center;gap:4px}
 #pp-header-user{font-size:12px;color:var(--pp-text-muted,#57606a);padding:0 8px}
 .pp-header-btn{display:flex;align-items:center;justify-content:center;gap:4px;background:none;border:none;cursor:pointer;color:var(--pp-text-muted,#57606a);font-size:12px;font-family:inherit;padding:0;width:36px;height:36px;border-radius:8px;text-decoration:none;transition:background .15s,color .15s}
@@ -118,6 +125,10 @@ export const HEADER_CSS = `
 .pp-header-btn-accent.pp-active{background:#fff;color:var(--pp-accent,#2563eb);box-shadow:inset 0 0 0 1.5px var(--pp-accent,#2563eb)}
 .pp-header-btn-accent.pp-active:hover{background:var(--pp-accent-soft,#eff4ff)}
 .pp-header-btn-accent.pp-active svg{stroke:var(--pp-accent,#2563eb)}
+#pp-publish-btn{width:auto;padding:0 12px;gap:6px;background:var(--pp-surface-1,#f6f8fa);color:var(--pp-text,#1a1d23);font-weight:600;font-size:12px;border:1px solid var(--pp-border,#d0d7de)}
+#pp-publish-btn:hover{background:var(--pp-accent,#2563eb);color:#fff;border-color:var(--pp-accent,#2563eb)}
+#pp-publish-btn:hover svg{stroke:#fff}
+#pp-publish-btn-label{display:inline}
 #pp-comments-btn-badge{display:none}
 .pp-menu-label{display:none}
 #pp-header-actions{display:flex;align-items:center;gap:4px}
@@ -125,6 +136,8 @@ export const HEADER_CSS = `
 @media(max-width:600px){
 #pp-header-inner{padding:0 8px}
 #pp-comments-btn-label{display:none}
+#pp-publish-btn-label{display:none}
+#pp-publish-btn{padding:0;width:36px;border:none}
 #pp-comments-btn-badge{display:inline-block;background:#fff;color:var(--pp-accent,#2563eb);font-size:11px;font-weight:700;min-width:18px;height:18px;line-height:18px;text-align:center;border-radius:9px;padding:0 4px}
 .pp-header-btn-accent{width:auto;padding:0 8px;gap:5px}
 .pp-menu-toggle{display:flex;width:40px;height:40px}

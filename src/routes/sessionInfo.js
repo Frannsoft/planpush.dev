@@ -1,4 +1,5 @@
 import { knex } from '../db.js';
+import { canAccessSession } from '../utils/visibility.js';
 
 // GET /api/sessions/:id/info
 export async function handleSessionInfo(req, res) {
@@ -13,7 +14,7 @@ export async function handleSessionInfo(req, res) {
     .where('s.id', sessionId)
     .whereNull('s.deleted_at')
     .select(
-      's.id', 's.title', 's.current_version', 's.created_at', 's.last_updated',
+      's.id', 's.title', 's.current_version', 's.created_at', 's.last_updated', 's.published_at', 's.created_by',
       'u.github_username as creator_github_username',
       'u.display_name as creator_display_name',
       'u.avatar_url as creator_avatar_url',
@@ -22,6 +23,11 @@ export async function handleSessionInfo(req, res) {
     .first();
 
   if (!session) {
+    return res.status(404).json({ error: 'session_not_found' });
+  }
+
+  const user = await knex('users').where({ id: req.tokenData.user_id }).select('role').first();
+  if (!canAccessSession(session, req.tokenData, user?.role)) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 
@@ -106,6 +112,7 @@ export async function handleSessionInfo(req, res) {
       current_version: session.current_version,
       created_at: session.created_at,
       last_updated: session.last_updated,
+      published_at: session.published_at,
       creator: {
         display_name: session.creator_display_name,
         github_username: session.creator_github_username,

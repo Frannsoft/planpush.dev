@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { knex } from '../db.js';
 import { notifySlack } from '../utils/slack.js';
+import { canAccessSession } from '../utils/visibility.js';
 
 // GET /api/comments?session_id={sessionId}
 export async function handleGetComments(req, res) {
@@ -14,10 +15,15 @@ export async function handleGetComments(req, res) {
   const session = await knex('sessions')
     .where({ id: sessionId })
     .whereNull('deleted_at')
-    .select('id', 'current_version')
+    .select('id', 'current_version', 'published_at', 'created_by')
     .first();
 
   if (!session) {
+    return res.status(404).json({ error: 'session_not_found' });
+  }
+
+  const user = await knex('users').where({ id: tokenData.user_id }).select('role').first();
+  if (!canAccessSession(session, tokenData, user?.role)) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 
@@ -53,10 +59,15 @@ export async function handlePostComment(req, res) {
   const session = await knex('sessions')
     .where({ id: session_id })
     .whereNull('deleted_at')
-    .select('id', 'title', 'current_version')
+    .select('id', 'title', 'current_version', 'published_at', 'created_by')
     .first();
 
   if (!session) {
+    return res.status(404).json({ error: 'session_not_found' });
+  }
+
+  const user = await knex('users').where({ id: tokenData.user_id }).select('role').first();
+  if (!canAccessSession(session, tokenData, user?.role)) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 
@@ -71,19 +82,21 @@ export async function handlePostComment(req, res) {
     plan_version: session.current_version,
   });
 
-  // Fire-and-forget Slack notification
-  const planUrl = `${req.planpushBaseUrl}/p/${session_id}`;
-  setImmediate(() => {
-    notifySlack({
-      event: 'comment_added',
-      sessionId: session_id,
-      sessionTitle: session.title || 'Untitled Plan',
-      author: tokenData.display_name || tokenData.github_username,
-      content,
-      anchor: anchor || null,
-      planUrl,
-    }).catch(console.error);
-  });
+  // Fire-and-forget Slack notification (skip for private plans)
+  if (session.published_at) {
+    const planUrl = `${req.planpushBaseUrl}/p/${session_id}`;
+    setImmediate(() => {
+      notifySlack({
+        event: 'comment_added',
+        sessionId: session_id,
+        sessionTitle: session.title || 'Untitled Plan',
+        author: tokenData.display_name || tokenData.github_username,
+        content,
+        anchor: anchor || null,
+        planUrl,
+      }).catch(console.error);
+    });
+  }
 
   res.status(201).json({
     id: commentId,
@@ -110,10 +123,15 @@ export async function handleResolveComment(req, res) {
     .join('sessions as s', 'c.session_id', 's.id')
     .where('c.id', commentId)
     .whereNull('s.deleted_at')
-    .select('c.id', 'c.session_id', 'c.anchor', 'c.author_id', 's.title')
+    .select('c.id', 'c.session_id', 'c.anchor', 'c.author_id', 's.title', 's.published_at', 's.created_by')
     .first();
 
   if (!comment) {
+    return res.status(404).json({ error: 'comment_not_found' });
+  }
+
+  const user = await knex('users').where({ id: tokenData.user_id }).select('role').first();
+  if (!canAccessSession(comment, tokenData, user?.role)) {
     return res.status(404).json({ error: 'comment_not_found' });
   }
 
@@ -124,18 +142,20 @@ export async function handleResolveComment(req, res) {
 
   await knex('comments').where({ id: commentId }).update({ resolved: 1, resolved_at: knex.fn.now() });
 
-  // Fire-and-forget Slack notification
-  const planUrl = `${req.planpushBaseUrl}/p/${comment.session_id}`;
-  setImmediate(() => {
-    notifySlack({
-      event: 'comment_resolved',
-      sessionId: comment.session_id,
-      sessionTitle: comment.title || 'Untitled Plan',
-      author: tokenData.display_name || tokenData.github_username,
-      anchor: comment.anchor,
-      planUrl,
-    }).catch(console.error);
-  });
+  // Fire-and-forget Slack notification (skip for private plans)
+  if (comment.published_at) {
+    const planUrl = `${req.planpushBaseUrl}/p/${comment.session_id}`;
+    setImmediate(() => {
+      notifySlack({
+        event: 'comment_resolved',
+        sessionId: comment.session_id,
+        sessionTitle: comment.title || 'Untitled Plan',
+        author: tokenData.display_name || tokenData.github_username,
+        anchor: comment.anchor,
+        planUrl,
+      }).catch(console.error);
+    });
+  }
 
   res.json({ id: commentId, resolved: 1 });
 }

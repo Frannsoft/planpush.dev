@@ -55,6 +55,7 @@ export const DASHBOARD_JS = `
     if (f === 'new' && el.dataset.isNew !== '1') return false;
     if (f === 'stale' && el.dataset.isStale !== '1') return false;
     if (f === 'archived' && el.dataset.archived !== '1') return false;
+    if (f === 'private' && el.dataset.private !== '1') return false;
     if (f === 'mine' && el.dataset.isMine !== '1') return false;
 
     // By default, hide archived sessions unless specifically filtering for them
@@ -201,6 +202,7 @@ export const DASHBOARD_JS = `
     var id = row.dataset.id;
     if (action === 'delete') deleteSession(id, btn, row);
     if (action === 'archive') archiveSession(id, btn, row);
+    if (action === 'publish') publishSession(id, btn, row);
   }
 
   function deleteSession(id, btn, row) {
@@ -258,6 +260,30 @@ export const DASHBOARD_JS = `
       applyAll();
     })
     .catch(function() { btn.disabled = false; btn.textContent = isArchived ? 'Unarchive' : 'Archive'; alert('Failed to update session.'); });
+  }
+
+  function publishSession(id, btn, row) {
+    if (!confirm('Publish this plan?\\n\\nOnce published, all team members will be able to view it. This cannot be undone.')) return;
+    btn.disabled = true;
+    btn.textContent = '...';
+    fetch('/api/sessions/' + encodeURIComponent(id) + '/publish', {
+      method: 'POST',
+      credentials: 'same-origin'
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Publish failed');
+      // Update all matching elements (desktop + mobile)
+      $$('[data-id="' + CSS.escape(id) + '"]').forEach(function(el) {
+        el.dataset.private = '0';
+        // Remove private badges
+        el.querySelectorAll('.badge-private').forEach(function(b) { b.remove(); });
+        // Remove publish buttons
+        el.querySelectorAll('[data-action="publish"]').forEach(function(b) { b.remove(); });
+      });
+      recalcStats();
+      applyAll();
+    })
+    .catch(function() { btn.disabled = false; btn.textContent = 'Publish'; alert('Failed to publish session.'); });
   }
 
   function revokeToken(tokenId, btn, row) {

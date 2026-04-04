@@ -28,6 +28,7 @@ export async function handlePush(req, res) {
   let sessionId;
   let currentVersion;
   let sessionTitle;
+  let publishedAt = null;
 
   if (existingSessionId) {
     // Validate session ID format: sess_<hex> (legacy) or slug-style name
@@ -38,7 +39,7 @@ export async function handlePush(req, res) {
     const session = await knex('sessions')
       .where({ id: existingSessionId })
       .whereNull('deleted_at')
-      .select('id', 'title', 'created_by')
+      .select('id', 'title', 'created_by', 'published_at')
       .first();
 
     if (!session) {
@@ -52,6 +53,7 @@ export async function handlePush(req, res) {
 
     sessionId = existingSessionId;
     sessionTitle = session.title;
+    publishedAt = session.published_at;
 
     // Atomic version increment + record version history inside transaction
     currentVersion = await knex.transaction(async (trx) => {
@@ -91,11 +93,14 @@ export async function handlePush(req, res) {
     const titleMatch = html.match(/<title>([^<]*)<\/title>/i);
     sessionTitle = titleMatch ? titleMatch[1].trim().slice(0, 200) : 'Untitled Plan';
 
+    const isPrivate = req.headers['x-visibility'] === 'private';
+
     await knex.transaction(async (trx) => {
       await trx('sessions').insert({
         id: sessionId,
         title: sessionTitle,
         created_by: tokenData.user_id,
+        published_at: isPrivate ? null : knex.fn.now(),
       });
       await trx('session_versions').insert({
         session_id: sessionId,
@@ -115,8 +120,8 @@ export async function handlePush(req, res) {
 
   const planUrl = `${req.planpushBaseUrl}/p/${sessionId}`;
 
-  // Fire-and-forget Slack notification (only on subsequent pushes)
-  if (existingSessionId) {
+  // Fire-and-forget Slack notification (only on subsequent pushes to published plans)
+  if (existingSessionId && publishedAt) {
     setImmediate(() => {
       notifySlack({
         event: 'plan_updated',

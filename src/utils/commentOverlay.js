@@ -512,6 +512,38 @@ const INFO_PANEL_JS = `(function() {
   if (infoBtn) infoBtn.style.display = '';
   if (shareBtn) shareBtn.style.display = '';
 
+  // Private badge (only present in DOM when isPrivate is true)
+  var privateBadge = document.getElementById('pp-private-badge');
+  if (privateBadge) privateBadge.style.display = '';
+
+  // Publish button (only present in DOM when canPublish is true)
+  var publishBtn = document.getElementById('pp-publish-btn');
+  if (publishBtn) {
+    publishBtn.style.display = '';
+    publishBtn.addEventListener('click', function() {
+      if (!confirm('Publish this plan?\\n\\nOnce published, all team members will be able to view it. This cannot be undone.')) return;
+      publishBtn.disabled = true;
+      publishBtn.style.opacity = '.5';
+      fetch(API + '/api/sessions/' + encodeURIComponent(SESSION_ID) + '/publish', {
+        method: 'POST',
+        credentials: 'include'
+      }).then(function(r) {
+        if (!r.ok) throw new Error('publish failed');
+        publishBtn.style.display = 'none';
+        if (privateBadge) privateBadge.style.display = 'none';
+        if (toast) {
+          toast.textContent = 'Plan published';
+          toast.classList.add('pp-visible');
+          setTimeout(function() { toast.classList.remove('pp-visible'); }, 2500);
+        }
+      }).catch(function() {
+        publishBtn.disabled = false;
+        publishBtn.style.opacity = '';
+        alert('Failed to publish. Please try again.');
+      });
+    });
+  }
+
   // Version banner for old versions
   if (VIEWING_VERSION > 0 && VIEWING_VERSION < CURRENT_VERSION) {
     bannerText.innerHTML = 'Viewing version ' + VIEWING_VERSION + ' of ' + CURRENT_VERSION + ' — <a href="/p/' + escH(SESSION_ID) + '">View latest</a>';
@@ -701,8 +733,8 @@ const STATIC_JS_SUFFIX = `>${OVERLAY_JS}\n</script>`;
 
 // --- Public API ---
 
-export function buildOverlayHTML({ sessionId, currentUserId, displayName, apiOrigin, currentVersion, viewingVersion, nonce }) {
-  const headerContent = buildHeaderHTML({ displayName, userId: currentUserId, apiOrigin, showDashboardLink: true });
+export function buildOverlayHTML({ sessionId, currentUserId, displayName, apiOrigin, currentVersion, viewingVersion, canPublish = false, isPrivate = false, nonce }) {
+  const headerContent = buildHeaderHTML({ displayName, userId: currentUserId, apiOrigin, showDashboardLink: true, canPublish, isPrivate });
 
   // Header bar (per-request: nonce + user-specific header content)
   const headerBar = STATIC_HEADER_STYLE

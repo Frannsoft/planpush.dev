@@ -14,12 +14,12 @@ export async function fetchDashboardData(tokenData, isAdmin) {
         .leftJoin('comments as c', 'c.session_id', 's.id')
         .whereNull('s.deleted_at')
         .select(
-          's.id', 's.title', 's.created_by', 's.created_at', 's.last_updated', 's.archived_at',
+          's.id', 's.title', 's.created_by', 's.created_at', 's.last_updated', 's.archived_at', 's.published_at',
           knex.raw("COALESCE(u.display_name, u.github_username, 'Deleted user') as creator"),
           knex.raw('COALESCE(COUNT(c.id), 0) as comment_count'),
           knex.raw('COALESCE(SUM(CASE WHEN c.resolved = 0 THEN 1 ELSE 0 END), 0) as open_comments'),
         )
-        .groupBy('s.id', 's.title', 's.created_by', 's.created_at', 's.last_updated', 's.archived_at', 'u.display_name', 'u.github_username')
+        .groupBy('s.id', 's.title', 's.created_by', 's.created_at', 's.last_updated', 's.archived_at', 's.published_at', 'u.display_name', 'u.github_username')
         .orderBy('s.last_updated', 'desc')
         .limit(200),
     );
@@ -31,15 +31,18 @@ export async function fetchDashboardData(tokenData, isAdmin) {
         .whereNull('s.deleted_at')
         .where(function () {
           this.where('s.created_by', userId)
-            .orWhereIn('s.id', knex('comments').where('author_id', userId).distinct('session_id'));
+            .orWhere(function () {
+              this.whereIn('s.id', knex('comments').where('author_id', userId).distinct('session_id'))
+                .whereNotNull('s.published_at');
+            });
         })
         .select(
-          's.id', 's.title', 's.created_by', 's.created_at', 's.last_updated', 's.archived_at',
+          's.id', 's.title', 's.created_by', 's.created_at', 's.last_updated', 's.archived_at', 's.published_at',
           knex.raw("COALESCE(u.display_name, u.github_username, 'Deleted user') as creator"),
           knex.raw('COALESCE(COUNT(c.id), 0) as comment_count'),
           knex.raw('COALESCE(SUM(CASE WHEN c.resolved = 0 THEN 1 ELSE 0 END), 0) as open_comments'),
         )
-        .groupBy('s.id', 's.title', 's.created_by', 's.created_at', 's.last_updated', 's.archived_at', 'u.display_name', 'u.github_username')
+        .groupBy('s.id', 's.title', 's.created_by', 's.created_at', 's.last_updated', 's.archived_at', 's.published_at', 'u.display_name', 'u.github_username')
         .orderBy('s.last_updated', 'desc')
         .limit(200),
     );

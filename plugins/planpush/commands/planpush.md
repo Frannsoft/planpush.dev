@@ -146,12 +146,16 @@ If it returns empty or fails (no git repo), set `{plans_dir}` to `./pushplans` (
 
 Use the Read tool (not Bash) to read `.claude/plan-session-$CLAUDE_SESSION_ID`. If the file exists and contains a non-empty string, this is a subsequent push — find the existing `pushplan_*.html` file in `{plans_dir}` and reuse its `{session-name}`. Skip step 2c entirely.
 
-### 2c. First push — resolve the name
+### 2c. First push — resolve the name and visibility
 
-If the session file does not exist, is empty, or the Read tool returns an error, this is a first push. Determine the name using the **first matching rule**:
+If the session file does not exist, is empty, or the Read tool returns an error, this is a first push.
+
+**Visibility**: If $ARGUMENTS contains `--private`, set `{visibility}` to `private` and remove the flag from $ARGUMENTS before further parsing. Otherwise set `{visibility}` to `published`.
+
+Determine the name using the **first matching rule**:
 
 1. **$ARGUMENTS contains `name:`** — extract everything after `name:` up to the next recognized prefix or end of string. Sanitize it (see below). The remainder of $ARGUMENTS (if any) is still used as editorial direction in step 5.
-   Examples: `/planpush name: auth-redesign`, `/planpush name: Auth Redesign focus on the data model`
+   Examples: `/planpush name: auth-redesign`, `/planpush name: Auth Redesign focus on the data model`, `/planpush --private name: draft-api`
 
 2. **No name in arguments — you MUST ask the user before proceeding.** Do not skip this. Do not generate a random name without asking. Prompt:
 
@@ -312,6 +316,7 @@ Read the HTML file and push it:
     -H "Authorization: Bearer {access_token}" \
     -H "Content-Type: text/html" \
     -H "X-Session-Name: {session-name}" \
+    -H "X-Visibility: {visibility}" \
     --data-binary @{plans_dir}/pushplan_{session-name}.html
 
 **Subsequent push** (has `{existing_session_id}`):
@@ -353,5 +358,12 @@ Print:
 
     URL: {url from response}
     Local: {plans_dir}/pushplan_{session-name}.html
+
+If `{visibility}` is `private`, also print:
+
+    🔒 This plan is private — only you and admins can see it.
+    You can publish it from the plan page when you're ready.
+
+Otherwise print:
 
   Share this link with your team. They can view the doc and leave comments.

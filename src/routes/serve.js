@@ -2,6 +2,7 @@ import { knex } from '../db.js';
 import { kv } from '../kv.js';
 import { generateNonce } from '../utils/crypto.js';
 import { buildOverlayHTML } from '../utils/commentOverlay.js';
+import { canAccessSession } from '../utils/visibility.js';
 import { BASE_PAGE_CSS, escHtml } from '../utils/html.js';
 
 function buildCsp(nonce) {
@@ -34,21 +35,27 @@ export async function handleServe(req, res) {
     return res.status(400).json({ error: 'missing_session_id' });
   }
 
-  // Optimistically fetch current HTML in parallel with session lookup
+  // Optimistically fetch current HTML and user role in parallel with session lookup
   // (for versioned requests, we'll need a second KV fetch)
   const requestedVersion = parseInt(req.query.v, 10) || 0;
-  const [session, currentHtml] = await Promise.all([
+  const [session, currentHtml, userRow] = await Promise.all([
     knex('sessions')
       .where({ id: sessionId })
       .whereNull('deleted_at')
-      .select('id', 'current_version', 'created_at')
+      .select('id', 'current_version', 'created_at', 'published_at', 'created_by', 'archived_at')
       .first(),
     requestedVersion > 0
       ? null // skip optimistic fetch for versioned requests
       : kv.get(`plan:${sessionId}:current`),
+    knex('users').where({ id: tokenData.user_id }).select('role').first(),
   ]);
 
   if (!session) {
+    return res.status(404).set('Content-Type', 'text/html; charset=UTF-8').send(notFoundPage());
+  }
+
+  const isAdmin = userRow?.role === 'admin';
+  if (!canAccessSession(session, tokenData, isAdmin ? 'admin' : 'member')) {
     return res.status(404).set('Content-Type', 'text/html; charset=UTF-8').send(notFoundPage());
   }
 
@@ -71,6 +78,8 @@ export async function handleServe(req, res) {
   const baseUrl = req.planpushBaseUrl;
 
   // Inject comment overlay
+  const isOwner = session.created_by === tokenData.user_id;
+  const canPublish = !session.published_at && !session.archived_at && (isOwner || isAdmin);
   const overlay = buildOverlayHTML({
     sessionId,
     currentUserId: tokenData.github_user_id,
@@ -78,6 +87,8 @@ export async function handleServe(req, res) {
     apiOrigin: baseUrl,
     currentVersion: session.current_version,
     viewingVersion: isVersioned ? requestedVersion : null,
+    canPublish,
+    isPrivate: !session.published_at,
     nonce,
   });
 

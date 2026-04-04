@@ -56,6 +56,8 @@ export const DASHBOARD_CSS = `
   .badge-new { background: var(--accent-bg); color: var(--accent); padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; margin-left: 8px; }
   .badge-stale { background: var(--warning-bg); color: var(--warning); padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; margin-left: 8px; }
   .badge-archived { background: var(--bg3); color: var(--muted); padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; margin-left: 8px; }
+  .badge-private { background: #f3e8ff; color: #7c3aed; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; margin-left: 8px; }
+  @media(prefers-color-scheme:dark){.badge-private{background:#2e1065;color:#c4b5fd}}
   .badge-admin { display: inline-flex; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; background: var(--success-bg); color: var(--success); margin-left: 8px; letter-spacing: 0.02em; }
   .badge-deactivated { display: inline-flex; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; background: var(--error-bg); color: var(--error); margin-left: 8px; }
   .badge-resolved { background: var(--success-bg); color: var(--success); padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }

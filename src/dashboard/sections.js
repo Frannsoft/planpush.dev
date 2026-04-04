@@ -73,6 +73,7 @@ export function renderFilterToolbar(isAdmin) {
       <option value="new">New since last visit</option>
       <option value="stale">Stale (30+ days)</option>
       <option value="archived">Archived</option>
+      <option value="private">Private</option>
       <option value="mine">Created by me</option>
     </select>
     <span class="filter-result-count" id="dash-result-count"></span>
@@ -82,6 +83,7 @@ export function renderFilterToolbar(isAdmin) {
 // --- Shared helpers for session badges/actions ---
 function buildSessionBadges(s) {
   const badges = [];
+  if (!s.published_at) badges.push('<span class="badge-private">Private</span>');
   if (s.is_new && !s.archived_at) badges.push('<span class="badge-new">New</span>');
   if (s.is_stale && !s.archived_at) badges.push('<span class="badge-stale">Stale</span>');
   if (s.archived_at) badges.push('<span class="badge-archived">Archived</span>');
@@ -90,6 +92,9 @@ function buildSessionBadges(s) {
 
 function buildSessionActions(s, isAdmin) {
   const actions = [];
+  if ((s.is_mine || isAdmin) && !s.published_at) {
+    actions.push('<button class="action-btn" data-action="publish">Publish</button>');
+  }
   if (s.is_mine) {
     actions.push(`<button class="action-btn" data-action="archive">${s.archived_at ? 'Unarchive' : 'Archive'}</button>`);
   }
@@ -110,7 +115,8 @@ function sessionDataAttrs(s) {
       data-is-new="${s.is_new ? '1' : '0'}"
       data-is-stale="${s.is_stale ? '1' : '0'}"
       data-is-mine="${s.is_mine ? '1' : '0'}"
-      data-archived="${s.archived_at ? '1' : '0'}"`;
+      data-archived="${s.archived_at ? '1' : '0'}"
+      data-private="${s.published_at ? '0' : '1'}"`;
 }
 
 // --- Sessions table ---
@@ -189,6 +195,7 @@ export function renderActivityFeed(activity, baseUrl) {
     'session.deleted': { icon: 'activity-icon-delete', label: 'deleted', emoji: '&#x1F5D1;' },
     'session.archived': { icon: 'activity-icon-archive', label: 'archived', emoji: '&#x1F4E6;' },
     'session.unarchived': { icon: 'activity-icon-archive', label: 'unarchived', emoji: '&#x1F4E6;' },
+    'session.published': { icon: 'activity-icon-push', label: 'published', emoji: '&#x1F513;' },
     'comment.created': { icon: 'activity-icon-comment', label: 'commented on', emoji: '&#x1F4AC;' },
     'comment.resolved': { icon: 'activity-icon-resolve', label: 'resolved a comment on', emoji: '&#x2705;' },
     'token.revoked': { icon: 'activity-icon-delete', label: 'revoked a token', emoji: '&#x1F511;' },

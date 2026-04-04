@@ -87,6 +87,7 @@ Server runs on port 3000. Requires `.env` (see `.env.example`).
 - `GET /activate` / `POST /activate` → device code activation page
 - `POST /api/push` → push HTML doc (accepts `X-Session-Name` for named URLs, `X-Session-Id` for updates)
 - `PATCH /api/sessions/:id/archive` → toggle session archive (owner or admin)
+- `POST /api/sessions/:id/publish` → one-way publish private session (owner or admin)
 - `POST /api/dashboard/views` → record session views for "new since last visit" badges
 - `GET /p/:sessionId` → view a plan (supports `?v=N` for old versions)
 - `GET /dashboard` → user dashboard (role-scoped: members see own sessions/comments, admins see all)
@@ -112,6 +113,18 @@ Name collisions return HTTP 409.
 - Session archiving: `archived_at` column, toggleable by owner or admin, hidden from default view
 - "New since last visit" badges: `session_views` table tracks per-user last-viewed timestamp per session
 - Activity feed uses existing `audit_log` table, scoped by role
+
+## Session Visibility
+
+- Sessions have a `published_at` nullable timestamp: `null` = private, set = published
+- Private plans visible only to owner + admins; published plans visible to all authenticated users
+- Push-time: CLI sends `X-Visibility: private` header to create a private plan (default is published)
+- One-way publish: `POST /api/sessions/:id/publish` sets `published_at`; cannot be undone
+- All routes that access sessions (serve, comments, sessionInfo) enforce visibility via `canAccessSession()` from `src/utils/visibility.js`
+- Returns 404 (not 403) for unauthorized access to prevent session existence leaks
+- Existing sessions (pre-migration) default to published
+- Slack notifications skipped for private plan pushes
+- Dashboard: admins see all private plans with "Private" badge; members only see their own
 
 ## Key Patterns
 
