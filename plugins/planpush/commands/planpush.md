@@ -118,9 +118,11 @@ Using `{server_url}` and `{refresh_token}` from the credentials file, run:
     -H "Content-Type: application/json" \
     -d '{"refresh_token": "{refresh_token}"}'
 
-Expected response: `{"access_token": "...", "expires_in": 3600}`
+Expected response: `{"access_token": "...", "refresh_token": "...", "expires_in": 3600}`
 
-If the response contains `{"error": "invalid_refresh_token"}` or any auth error:
+If the response contains a `refresh_token` field, **update the credentials file** with the new refresh token (token rotation). This is critical — the old refresh token is now revoked and cannot be reused.
+
+If the response contains `{"error": "invalid_refresh_token"}`, `{"error": "token_reuse_detected"}`, or any auth error:
 - Print: `⟳ Session expired. Re-authenticating...`
 - Go back to step 1b to run the device flow again with the existing `{server_url}`
 - After successful re-auth, retry this step once
@@ -144,7 +146,9 @@ If it returns empty or fails (no git repo), set `{plans_dir}` to `./pushplans` (
 
 ### 2b. Check for subsequent push
 
-Use the Read tool (not Bash) to read `.claude/plan-session-$CLAUDE_SESSION_ID`. If the file exists and contains a non-empty string, this is a subsequent push — find the existing `pushplan_*.html` file in `{plans_dir}` and reuse its `{session-name}`. Skip step 2c entirely.
+Search for existing `pushplan_*.html` files in `{plans_dir}`. If exactly one exists, extract `{session-name}` from its filename (strip the `pushplan_` prefix and `.html` suffix). Use the Read tool to read `.claude/plan-session-{session-name}`. If it exists and contains a non-empty string, this is a subsequent push — skip step 2c entirely.
+
+If multiple `pushplan_*.html` files exist, proceed to step 2c (the user will provide the name, and if it matches an existing file, it becomes a subsequent push).
 
 ### 2c. First push — resolve the name and visibility
 
@@ -175,7 +179,7 @@ The local output file will be: `{plans_dir}/pushplan_{session-name}.html`
 
 ## 3. Check for existing server session
 
-Use the Read tool (not Bash) to silently read `.claude/plan-session-$CLAUDE_SESSION_ID`.
+Use the Read tool (not Bash) to silently read `.claude/plan-session-{session-name}`.
 
 If the file exists and contains a non-empty string, store it as `{existing_session_id}`.
 This is a subsequent push — the server will overwrite the existing session.
@@ -344,7 +348,7 @@ Then stop.
 
 Write the `session_id` from the response to:
 
-  .claude/plan-session-$CLAUDE_SESSION_ID
+  .claude/plan-session-{session-name}
 
 (Overwrite if it already exists.)
 
