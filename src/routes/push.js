@@ -4,6 +4,7 @@ import { generateSessionId } from '../utils/crypto.js';
 import { notifySlack } from '../utils/slack.js';
 import { sanitizeHtml } from '../utils/sanitize.js';
 import { writeAuditLog } from '../utils/audit.js';
+import { isValidSessionId } from '../utils/validate.js';
 
 const VERSION_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
 
@@ -31,8 +32,7 @@ export async function handlePush(req, res) {
   let publishedAt = null;
 
   if (existingSessionId) {
-    // Validate session ID format: sess_<hex> (legacy) or slug-style name
-    if (!/^(sess_[0-9a-f]{12}|[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?)$/.test(existingSessionId)) {
+    if (!isValidSessionId(existingSessionId)) {
       return res.status(400).json({ error: 'invalid_session_id' });
     }
 

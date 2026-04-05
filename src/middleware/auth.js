@@ -45,7 +45,12 @@ export function setSessionCookie(res, payload) {
 }
 
 export function clearSessionCookie(res) {
-  res.clearCookie(COOKIE_NAME, { path: '/' });
+  res.clearCookie(COOKIE_NAME, {
+    path: '/',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+  });
 }
 
 export async function verifyRequest(req) {
@@ -88,7 +93,7 @@ export async function verifyRequest(req) {
   if (cached === '1') return null;
   if (cached === null) {
     const user = await knex('users').where({ id: tokenData.user_id }).select('deactivated_at').first();
-    if (user?.deactivated_at) {
+    if (!user || user.deactivated_at) {
       await kv.put(cacheKey, '1', { expirationTtl: 300 });
       return null;
     }

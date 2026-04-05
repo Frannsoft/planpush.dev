@@ -1,10 +1,14 @@
 import { knex } from '../db.js';
 import { kv } from '../kv.js';
 import { writeAuditLog } from '../utils/audit.js';
+import { isValidSessionId } from '../utils/validate.js';
 
 // DELETE /api/sessions/:id — soft-delete a session (admin only)
 export async function handleDeleteSession(req, res) {
   const sessionId = req.params.id;
+  if (!isValidSessionId(sessionId)) {
+    return res.status(400).json({ error: 'invalid_session_id' });
+  }
 
   const session = await knex('sessions')
     .where({ id: sessionId })

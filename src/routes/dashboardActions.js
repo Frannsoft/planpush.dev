@@ -2,10 +2,14 @@ import { knex } from '../db.js';
 import { writeAuditLog } from '../utils/audit.js';
 import { canAccessSession } from '../utils/visibility.js';
 import { recordSessionViews } from '../dashboard/queries.js';
+import { isValidSessionId } from '../utils/validate.js';
 
 // PATCH /api/sessions/:id/archive — toggle archive (owner or admin)
 export async function handleArchiveSession(req, res) {
   const sessionId = req.params.id;
+  if (!isValidSessionId(sessionId)) {
+    return res.status(400).json({ error: 'invalid_session_id' });
+  }
   const userId = req.tokenData.user_id;
   const { archived } = req.body;
 
@@ -48,6 +52,9 @@ export async function handleArchiveSession(req, res) {
 // POST /api/sessions/:id/publish — one-way publish (owner or admin)
 export async function handlePublishSession(req, res) {
   const sessionId = req.params.id;
+  if (!isValidSessionId(sessionId)) {
+    return res.status(400).json({ error: 'invalid_session_id' });
+  }
   const userId = req.tokenData.user_id;
 
   const user = await knex('users').where({ id: userId }).select('role').first();
@@ -96,8 +103,13 @@ export async function handleRecordViews(req, res) {
     return res.status(400).json({ error: 'invalid_body' });
   }
 
+  const validIds = session_ids.filter(isValidSessionId);
+  if (validIds.length === 0) {
+    return res.status(400).json({ error: 'invalid_session_ids' });
+  }
+
   try {
-    await recordSessionViews(req.tokenData.user_id, session_ids);
+    await recordSessionViews(req.tokenData.user_id, validIds);
   } catch {
     // Non-fatal — stale session IDs may cause FK violations
   }

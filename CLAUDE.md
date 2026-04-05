@@ -47,22 +47,28 @@ Server runs on port 3000. Requires `.env` (see `.env.example`).
 
 ## Security
 
-- `helmet` for global security headers (HSTS, X-Content-Type-Options, Referrer-Policy, etc.)
-- `express-rate-limit` on all auth endpoints (30 req / 15 min)
+- `helmet` for global security headers (HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, etc.)
+- `express-rate-limit` on auth endpoints (30 req / 15 min), comment endpoints (20 req / 15 min), push endpoint (30 req / 15 min)
 - Docker runs Node as non-root `planpush` user via `su-exec` entrypoint
 - `SECRET_KEY` must be >= 32 characters (enforced at startup)
+- `BASE_URL` required in production (enforced at startup; prevents Host header injection)
 - Device token redemption is atomic (transaction prevents double-refresh-token issuance)
+- **Refresh token rotation**: tokens rotate on each use; replay of an old token revokes the entire token family
 - Auth check via `requireAuthOrRedirect` middleware (prevents session existence leaks)
-- Comment content capped at 4000 chars, anchor at 200
-- Slack messages escape user content for mrkdwn injection prevention
+- Comment content capped at 4000 chars, anchor at 200; content type validated as string
+- Slack messages escape user content for mrkdwn injection prevention; webhook URL validated to `https://hooks.slack.com/`
+- Input validation: shared validators in `src/utils/validate.js` for session IDs, device codes, user codes — applied on all route entry points before DB queries
+- HTML sanitization strips scripts, event handlers, `ping` attributes, inline `style` attributes, and dangerous URI schemes
+- `clearSessionCookie` mirrors all attributes from `setSessionCookie` (httpOnly, secure, sameSite) for cross-browser reliability
 
 ## Docker & CI
 
 - Published to Docker Hub: `frannsoftdev/planpush`
-- `.github/workflows/docker-publish.yml` — manual `workflow_dispatch` to build and push to Docker Hub
+- `.github/workflows/docker-publish.yml` — manual `workflow_dispatch`: runs `npm audit --audit-level=high`, then builds and pushes to Docker Hub
 - `.github/workflows/auto-tag.yml` — on push to `main`, creates git tag `v{version}` from `package.json` if it doesn't exist
 - Version lives in `package.json` — bump it in PRs, auto-tag on merge, then manually publish
 - Docker tags: `frannsoftdev/planpush:{version}` + `frannsoftdev/planpush:latest`
+- Multi-stage Dockerfile: build stage compiles native modules, runtime stage has no build tools (python3/make/g++)
 - Single arch (linux/amd64) only
 - GitHub secrets required: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`
 
@@ -83,7 +89,7 @@ Server runs on port 3000. Requires `.env` (see `.env.example`).
 - `GET /auth/callback` → OAuth callback (creates/upserts user, sets session cookie)
 - `GET /api/auth/device` → device flow: returns device_code + user_code
 - `POST /api/auth/device/token` → device flow: polls for authorization, returns refresh_token
-- `POST /api/auth/token` → exchange refresh token for access token
+- `POST /api/auth/token` → exchange refresh token for access token (rotates token, returns new refresh_token)
 - `GET /activate` / `POST /activate` → device code activation page
 - `POST /api/push` → push HTML doc (accepts `X-Session-Name` for named URLs, `X-Session-Id` for updates)
 - `PATCH /api/sessions/:id/archive` → toggle session archive (owner or admin)
@@ -99,7 +105,7 @@ Session IDs double as URL slugs. Two formats:
 - **Named** (preferred): slug-style from `X-Session-Name` header (e.g. `auth-redesign` → `/p/auth-redesign`)
 - **Legacy**: auto-generated `sess_` + 12 hex chars (e.g. `sess_064d4a62049b`)
 
-Validation regex: `/^(sess_[0-9a-f]{12}|[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?)$/`
+Validation: `isValidSessionId()` from `src/utils/validate.js` — regex `/^(sess_[0-9a-f]{12}|[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?)$/`
 Name collisions return HTTP 409.
 
 ## Dashboard
@@ -130,7 +136,7 @@ Name collisions return HTTP 409.
 
 - Auth: GitHub OAuth (web) + RFC 8628 device flow (CLI)
 - Device flow requires web login first — `handleAuthDeviceToken` returns a helpful error with login URL if user not found
-- HTML sanitization via cheerio (no inline scripts allowed in pushed docs)
+- HTML sanitization via cheerio (no inline scripts, event handlers, inline styles, or `ping` attrs allowed in pushed docs)
 - CSP with nonces for all inline scripts (base64url encoding)
 - Plan CSS/JS injected server-side, not authored by users
 - Graceful shutdown on SIGTERM/SIGINT (drains connections, destroys DB pool)

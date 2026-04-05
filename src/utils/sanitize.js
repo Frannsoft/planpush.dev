@@ -40,6 +40,16 @@ export async function sanitizeHtml(html) {
         $(el).removeAttr(name);
         continue;
       }
+      // Remove ping (causes browser to POST to attacker-controlled URLs on click)
+      if (name === 'ping') {
+        $(el).removeAttr(name);
+        continue;
+      }
+      // Remove inline styles (prevents CSS injection via url(), position:fixed overlays, etc.)
+      if (name === 'style') {
+        $(el).removeAttr(name);
+        continue;
+      }
       // Sanitize dangerous URI schemes in href/src/action/formaction
       if (DANGEROUS_URI_ATTRS.has(name) && DANGEROUS_URI_SCHEMES.test(value)) {
         $(el).attr(name, '#');

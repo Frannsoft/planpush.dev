@@ -4,6 +4,7 @@ import { generateNonce } from '../utils/crypto.js';
 import { buildOverlayHTML } from '../utils/commentOverlay.js';
 import { canAccessSession } from '../utils/visibility.js';
 import { BASE_PAGE_CSS, escHtml } from '../utils/html.js';
+import { isValidSessionId } from '../utils/validate.js';
 
 function buildCsp(nonce) {
   return [
@@ -31,8 +32,8 @@ export async function handleServe(req, res) {
   const sessionId = req.params.sessionId;
   const tokenData = req.tokenData;
 
-  if (!sessionId) {
-    return res.status(400).json({ error: 'missing_session_id' });
+  if (!isValidSessionId(sessionId)) {
+    return res.status(404).set('Content-Type', 'text/html; charset=UTF-8').send(notFoundPage());
   }
 
   // Optimistically fetch current HTML and user role in parallel with session lookup

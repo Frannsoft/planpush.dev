@@ -2,14 +2,15 @@ import { randomUUID } from 'crypto';
 import { knex } from '../db.js';
 import { notifySlack } from '../utils/slack.js';
 import { canAccessSession } from '../utils/visibility.js';
+import { isValidSessionId } from '../utils/validate.js';
 
 // GET /api/comments?session_id={sessionId}
 export async function handleGetComments(req, res) {
   const tokenData = req.tokenData;
   const sessionId = req.query.session_id;
 
-  if (!sessionId) {
-    return res.status(400).json({ error: 'missing_session_id' });
+  if (!isValidSessionId(sessionId)) {
+    return res.status(400).json({ error: 'invalid_session_id' });
   }
 
   const session = await knex('sessions')
@@ -48,6 +49,12 @@ export async function handlePostComment(req, res) {
 
   if (!session_id || !content) {
     return res.status(400).json({ error: 'missing_fields', required: ['session_id', 'content'] });
+  }
+  if (!isValidSessionId(session_id)) {
+    return res.status(400).json({ error: 'invalid_session_id' });
+  }
+  if (typeof content !== 'string') {
+    return res.status(400).json({ error: 'invalid_content' });
   }
   if (content.length > 4000) {
     return res.status(400).json({ error: 'comment_too_long', max: 4000 });

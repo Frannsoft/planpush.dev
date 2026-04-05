@@ -1,12 +1,13 @@
 import { knex } from '../db.js';
 import { canAccessSession } from '../utils/visibility.js';
+import { isValidSessionId } from '../utils/validate.js';
 
 // GET /api/sessions/:id/info
 export async function handleSessionInfo(req, res) {
   const sessionId = req.params.id;
 
-  if (!sessionId) {
-    return res.status(400).json({ error: 'missing_session_id' });
+  if (!isValidSessionId(sessionId)) {
+    return res.status(400).json({ error: 'invalid_session_id' });
   }
 
   const session = await knex('sessions as s')

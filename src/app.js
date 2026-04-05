@@ -22,6 +22,9 @@ if (!process.env.SECRET_KEY || process.env.SECRET_KEY.length < 32) {
 if (!process.env.GITHUB_CLIENT_ID) throw new Error('GITHUB_CLIENT_ID environment variable is required');
 if (!process.env.GITHUB_CLIENT_SECRET) throw new Error('GITHUB_CLIENT_SECRET environment variable is required');
 if (!process.env.GITHUB_ORG) throw new Error('GITHUB_ORG environment variable is required');
+if (process.env.NODE_ENV === 'production' && !process.env.BASE_URL) {
+  throw new Error('BASE_URL environment variable is required in production (prevents Host header injection)');
+}
 
 const app = express();
 
@@ -46,6 +49,12 @@ app.use(helmet({
   },
   crossOriginEmbedderPolicy: false,
 }));
+
+// Permissions-Policy: restrict browser features not needed by a design doc tool
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+  next();
+});
 
 // Body parsing
 app.use(express.json({ limit: '1mb' }));
@@ -79,6 +88,14 @@ const pushLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'too_many_requests' },
 });
+// Per-user comment rate limit
+const commentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'too_many_requests' },
+});
 app.use('/api/auth/device/token', devicePollLimiter);
 app.use('/api/auth/', authLimiter);
 app.use('/activate', authLimiter);
@@ -107,8 +124,8 @@ app.get('/api/auth/session', handleSessionCheck);
 // Core routes (authenticated)
 app.post('/api/push', requireAuth, pushLimiter, handlePush);
 app.get('/api/comments', requireAuth, handleGetComments);
-app.post('/api/comments', requireAuth, handlePostComment);
-app.patch('/api/comments/:id/resolve', requireAuth, handleResolveComment);
+app.post('/api/comments', requireAuth, commentLimiter, handlePostComment);
+app.patch('/api/comments/:id/resolve', requireAuth, commentLimiter, handleResolveComment);
 app.get('/api/sessions/:id/info', requireAuth, handleSessionInfo);
 
 // Admin routes

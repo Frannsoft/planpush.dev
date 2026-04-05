@@ -11,6 +11,7 @@ import {
 import { escHtml, safeRedirectUrl, BASE_PAGE_CSS } from '../utils/html.js';
 import { setSessionCookie, clearSessionCookie, verifyRequest, signSession, verifySession } from '../middleware/auth.js';
 import { writeAuditLog } from '../utils/audit.js';
+import { isValidDeviceCode, isValidUserCode } from '../utils/validate.js';
 
 const DEVICE_CODE_EXPIRY_MINUTES = 15;
 const ACCESS_TOKEN_EXPIRY_MINUTES = 60;
@@ -55,16 +56,21 @@ export async function handleLogin(req, res) {
 export async function handleCallback(req, res) {
   const { code, state } = req.query;
 
-  if (!code) return res.status(400).send('Missing authorization code');
+  const clearOAuthState = () => res.clearCookie('__oauth_state', {
+    path: '/', httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax',
+  });
+
+  if (!code) { clearOAuthState(); return res.status(400).send('Missing authorization code'); }
 
   // Verify state CSRF nonce
   const stateData = verifySession(state || '');
-  if (!stateData) return res.status(400).send('Invalid or expired OAuth state');
+  if (!stateData) { clearOAuthState(); return res.status(400).send('Invalid or expired OAuth state'); }
   const storedNonce = req.cookies?.['__oauth_state'];
   if (!storedNonce || storedNonce !== stateData.nonce) {
+    clearOAuthState();
     return res.status(400).send('OAuth state mismatch — possible CSRF. Please try again.');
   }
-  res.clearCookie('__oauth_state', { path: '/' });
+  clearOAuthState();
 
   // Exchange code for GitHub access token
   const tokenResp = await fetchWithTimeout('https://github.com/login/oauth/access_token', {
@@ -209,6 +215,7 @@ export async function handleAuthDeviceToken(req, res) {
   const { device_code } = req.body;
 
   if (!device_code) return res.status(400).json({ error: 'missing_device_code' });
+  if (!isValidDeviceCode(device_code)) return res.status(400).json({ error: 'invalid_device_code' });
 
   const row = await knex('device_codes').where({ device_code }).first();
 
@@ -246,7 +253,7 @@ export async function handleAuthDeviceToken(req, res) {
     const issued = await knex.transaction(async (trx) => {
       const deleted = await trx('device_codes').where({ device_code }).delete();
       if (deleted === 0) return false; // another request already claimed it
-      await trx('api_tokens').insert({ id: tokenId, user_id: user.id, hashed_token: hashed });
+      await trx('api_tokens').insert({ id: tokenId, user_id: user.id, hashed_token: hashed, family_id: tokenId });
       return true;
     });
 
@@ -278,18 +285,48 @@ export async function handleAuthToken(req, res) {
 
   const hashed = await hashToken(refresh_token);
 
-  const token = await knex('api_tokens as t')
-    .join('users as u', 't.user_id', 'u.id')
-    .where('t.hashed_token', hashed)
-    .whereNull('t.revoked_at')
-    .whereNull('u.deactivated_at')
-    .select('t.id', 't.user_id', 'u.github_user_id', 'u.github_username', 'u.display_name', 'u.role')
-    .first();
+  // Atomic token rotation with replay detection inside a single transaction
+  const newRefreshToken = generateRefreshToken();
+  const newHashed = await hashToken(newRefreshToken);
+  const newTokenId = randomUUID();
 
-  if (!token) return res.status(401).json({ error: 'invalid_refresh_token' });
+  const result = await knex.transaction(async (trx) => {
+    const token = await trx('api_tokens as t')
+      .join('users as u', 't.user_id', 'u.id')
+      .where('t.hashed_token', hashed)
+      .whereNull('u.deactivated_at')
+      .select('t.id', 't.user_id', 't.revoked_at', 't.family_id', 'u.github_user_id', 'u.github_username', 'u.display_name', 'u.role')
+      .first();
 
-  // Update last_used_at
-  await knex('api_tokens').where({ id: token.id }).update({ last_used_at: knex.fn.now() });
+    if (!token) return { error: 'invalid_refresh_token' };
+
+    // Replay detection: if this token was already rotated (revoked), revoke entire family
+    if (token.revoked_at) {
+      await trx('api_tokens')
+        .where({ family_id: token.family_id })
+        .whereNull('revoked_at')
+        .update({ revoked_at: trx.fn.now() });
+      return { error: 'token_reuse_detected' };
+    }
+
+    // Rotate: revoke old token and issue new one
+    const familyId = token.family_id || token.id;
+    await trx('api_tokens').where({ id: token.id }).update({
+      revoked_at: trx.fn.now(),
+      last_used_at: trx.fn.now(),
+    });
+    await trx('api_tokens').insert({
+      id: newTokenId,
+      user_id: token.user_id,
+      hashed_token: newHashed,
+      family_id: familyId,
+    });
+
+    return { token };
+  });
+
+  if (result.error) return res.status(401).json({ error: result.error });
+  const { token } = result;
 
   // Issue short-lived access token stored in KV
   const accessToken = generateAccessToken();
@@ -302,13 +339,14 @@ export async function handleAuthToken(req, res) {
       github_username: token.github_username,
       display_name: token.display_name || null,
       role: token.role || 'member',
-      token_id: token.id,
+      token_id: newTokenId,
     }),
     { expirationTtl: ACCESS_TOKEN_EXPIRY_MINUTES * 60 }
   );
 
   res.json({
     access_token: accessToken,
+    refresh_token: newRefreshToken,
     token_type: 'bearer',
     expires_in: ACCESS_TOKEN_EXPIRY_MINUTES * 60,
   });
@@ -331,6 +369,7 @@ export async function handleActivatePost(req, res) {
 
   const userCode = (req.body.user_code || '').toUpperCase().trim();
   if (!userCode) return res.status(400).json({ error: 'Please enter a code.' });
+  if (!isValidUserCode(userCode)) return res.status(400).json({ error: 'Invalid code format.' });
 
   // Atomic: update only if still pending, preventing double-activation race
   const updated = await knex('device_codes')
@@ -442,11 +481,10 @@ function getActivatePage(isSignedIn, displayName) {
       e.preventDefault();
       submitCode(document.getElementById('user_code').value);
     });
-    // Auto-fill and auto-submit if code is in the URL
+    // Auto-fill from URL but require user to click Authorize (prevents silent authorization via crafted links)
     var urlCode = new URLSearchParams(window.location.search).get('code');
     if (urlCode) {
       document.getElementById('user_code').value = urlCode;
-      submitCode(urlCode);
     }
     </script>
   ` : `

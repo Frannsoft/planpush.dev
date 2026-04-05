@@ -4,6 +4,7 @@
 export async function notifySlack({ event, sessionId, sessionTitle, author, content, anchor, planUrl }) {
   const webhookUrl = (process.env.SLACK_WEBHOOK_URL || '').trim();
   if (!webhookUrl) return; // Slack not configured — skip silently
+  if (!webhookUrl.startsWith('https://hooks.slack.com/')) return; // Prevent SSRF via misconfigured URL
 
   let text;
   let blocks;
