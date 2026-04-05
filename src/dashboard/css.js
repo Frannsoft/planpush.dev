@@ -21,6 +21,7 @@ export const DASHBOARD_CSS = `
   .stat-value { font-size: 28px; font-weight: 800; letter-spacing: -0.02em; }
   .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; font-weight: 600; }
   .stat-value.accent { color: var(--accent); }
+  .stat-hint { font-size: 10px; color: var(--muted); margin-top: 4px; line-height: 1.3; opacity: 0.7; }
 
   /* --- Sections --- */
   .section { margin-bottom: 32px; }
@@ -111,6 +112,8 @@ export const DASHBOARD_CSS = `
   /* --- Token section --- */
   .token-label { font-weight: 600; }
   .token-meta { font-size: 11px; color: var(--muted); }
+  .section-desc { font-size: 12px; color: var(--muted); margin-bottom: 14px; line-height: 1.5; }
+  .section-desc code { background: var(--bg3); padding: 2px 6px; border-radius: 4px; font-family: var(--font-mono); font-size: 11px; }
 
   /* --- Card (integrations) --- */
   .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--shadow-sm); }

@@ -35,7 +35,8 @@ export function renderStatsBar(stats, isAdmin) {
     ${stats.newCount > 0 ? `
     <div class="stat">
       <div class="stat-value accent" id="stat-new">${stats.newCount}</div>
-      <div class="stat-label">New Since Last Visit</div>
+      <div class="stat-label">Updated Since You Last Looked</div>
+      <div class="stat-hint">Sessions with new pushes or comments</div>
     </div>` : ''}
     ${isAdmin ? `
     <div class="stat">
@@ -44,7 +45,8 @@ export function renderStatsBar(stats, isAdmin) {
     </div>` : ''}
     <div class="stat">
       <div class="stat-value">${stats.tokenCount}</div>
-      <div class="stat-label">API Tokens</div>
+      <div class="stat-label">CLI Connections</div>
+      <div class="stat-hint">Active Claude Code plugin sessions</div>
     </div>
   </div>`;
 }
@@ -56,7 +58,7 @@ export function renderTabBar(isAdmin, stats, myCommentsCount, activityCount) {
     <button class="tab-btn active" data-tab="sessions" role="tab" aria-selected="true">Sessions<span class="tab-count">${stats.sessionCount}</span></button>
     <button class="tab-btn" data-tab="activity" role="tab">Activity<span class="tab-count">${activityCount}</span></button>
     <button class="tab-btn" data-tab="comments" role="tab">My Comments<span class="tab-count">${myCommentsCount}</span></button>
-    <button class="tab-btn" data-tab="tokens" role="tab">API Tokens<span class="tab-count">${stats.tokenCount}</span></button>
+    <button class="tab-btn" data-tab="tokens" role="tab">CLI Connections<span class="tab-count">${stats.tokenCount}</span></button>
     ${isAdmin ? `<button class="tab-btn" data-tab="members" role="tab">Members<span class="tab-count">${stats.memberCount}</span></button>` : ''}
     ${isAdmin ? '<button class="tab-btn" data-tab="integrations" role="tab">Integrations</button>' : ''}
   </nav>`;
@@ -269,21 +271,21 @@ export function renderMyComments(comments, baseUrl) {
   </div>`;
 }
 
-// --- Tokens ---
+// --- CLI Connections (Tokens) ---
 export function renderTokenSection(tokens) {
   if (tokens.length === 0) {
     return `
     <div class="tab-section" data-section="tokens">
       <div class="empty">
-        <div class="empty-title">No API tokens</div>
-        <div class="empty-desc">API tokens are created automatically when you connect via the Claude Code plugin. Active tokens will appear here.</div>
+        <div class="empty-title">No CLI connections</div>
+        <div class="empty-desc">When you run <code>/planpush</code> in Claude Code, a connection is created automatically so the plugin can push plans on your behalf.</div>
       </div>
     </div>`;
   }
 
   const rows = tokens.map(t => `
     <tr data-token-id="${escHtml(t.id)}">
-      <td class="token-label">${escHtml(t.label || 'CLI Token')}</td>
+      <td class="token-label">${escHtml(t.label || 'Claude Code')}</td>
       <td class="muted">${timeAgo(t.issued_at)}</td>
       <td class="muted">${t.last_used_at ? timeAgo(t.last_used_at) : 'Never'}</td>
       <td><button class="action-btn action-btn-danger" data-action="revoke-token">Revoke</button></td>
@@ -291,8 +293,9 @@ export function renderTokenSection(tokens) {
 
   return `
   <div class="tab-section" data-section="tokens">
+    <p class="section-desc">These are active connections from the Claude Code plugin. Revoking a connection will require re-authenticating next time you run <code>/planpush</code>.</p>
     <table>
-      <thead><tr><th>Token</th><th>Issued</th><th>Last Used</th><th>Actions</th></tr></thead>
+      <thead><tr><th>Connection</th><th>Connected</th><th>Last Used</th><th>Actions</th></tr></thead>
       <tbody id="tokens-tbody">${rows}</tbody>
     </table>
   </div>`;
