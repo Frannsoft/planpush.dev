@@ -6,9 +6,8 @@ import { buildHeaderHTML, HEADER_CSS, LOGOUT_JS, escHtml } from './html.js';
 // --- Pre-computed static parts ---
 
 const SIDEBAR_CSS = `
-#pp-sidebar{position:fixed;right:0;top:48px;height:calc(100vh - 48px);width:380px;max-width:100vw;background:var(--pp-bg,#f0f1f3);border-left:1px solid var(--pp-border,#d0d7de);z-index:99999;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:var(--pp-text,#16171a);box-shadow:-8px 0 24px rgba(0,0,0,.08)}
+#pp-sidebar{position:fixed;right:0;top:48px;height:calc(100vh - 48px);width:380px;max-width:100vw;background:var(--pp-bg,#f0f1f3);border-left:1px solid var(--pp-border,#d0d7de);z-index:99999;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:var(--pp-text,#16171a);box-shadow:-8px 0 24px light-dark(rgba(0,0,0,.08),rgba(0,0,0,.4))}
 #pp-sidebar.pp-open{transform:translateX(0)}
-@media(prefers-color-scheme:dark){#pp-sidebar{box-shadow:-8px 0 24px rgba(0,0,0,.4)}}
 @media(max-width:600px){#pp-sidebar{width:100vw;top:0;height:100vh;border-left:none;border-radius:0}}
 
 #pp-sidebar-header{padding:14px 16px;border-bottom:1px solid var(--pp-border,#d0d7de);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
@@ -398,9 +397,8 @@ const OVERLAY_JS = `(function() {
 // --- Info panel static parts ---
 
 const INFO_PANEL_CSS = `
-#pp-info-panel{position:fixed;right:0;top:48px;height:calc(100vh - 48px);width:380px;max-width:100vw;background:var(--pp-bg,#f0f1f3);border-left:1px solid var(--pp-border,#d0d7de);z-index:99998;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:var(--pp-text,#16171a);box-shadow:-8px 0 24px rgba(0,0,0,.08)}
+#pp-info-panel{position:fixed;right:0;top:48px;height:calc(100vh - 48px);width:380px;max-width:100vw;background:var(--pp-bg,#f0f1f3);border-left:1px solid var(--pp-border,#d0d7de);z-index:99998;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:var(--pp-text,#16171a);box-shadow:-8px 0 24px light-dark(rgba(0,0,0,.08),rgba(0,0,0,.4))}
 #pp-info-panel.pp-open{transform:translateX(0)}
-@media(prefers-color-scheme:dark){#pp-info-panel{box-shadow:-8px 0 24px rgba(0,0,0,.4)}}
 @media(max-width:600px){#pp-info-panel{width:100vw;top:48px;height:calc(100vh - 48px);border-left:none}}
 
 #pp-info-header{padding:14px 16px;border-bottom:1px solid var(--pp-border,#d0d7de);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
@@ -450,8 +448,7 @@ const INFO_PANEL_CSS = `
 .pp-activity-badge.resolve{background:var(--pp-success-bg,#e6f9ee);color:var(--pp-success,#0a8f52)}
 .pp-activity-content{font-size:12px;color:var(--pp-text-muted,#6b7685);margin-top:2px;white-space:pre-wrap;word-break:break-word}
 
-#pp-version-banner{display:none;position:fixed;top:48px;left:0;right:0;z-index:99997;background:#fff3e6;color:#d4620a;border-bottom:1px solid #ffd4a8;padding:10px 16px;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;text-align:center;font-weight:500}
-@media(prefers-color-scheme:dark){#pp-version-banner{background:#2a1a00;color:#ff8426;border-bottom-color:#4a3520}}
+#pp-version-banner{display:none;position:fixed;top:48px;left:0;right:0;z-index:99997;background:var(--pp-warning-bg,#fff3e6);color:var(--pp-warning,#d4620a);border-bottom:1px solid light-dark(#ffd4a8,#4a3520);padding:10px 16px;font-size:13px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;text-align:center;font-weight:500}
 #pp-version-banner a{color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px}
 #pp-version-banner.pp-visible{display:block}
 

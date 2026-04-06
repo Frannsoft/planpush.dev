@@ -321,7 +321,7 @@ export function renderMembersSection(members) {
       <thead><tr><th>User</th><th>GitHub</th><th>Joined</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p style="font-size:12px;color:var(--muted);margin-top:8px">Members are managed via your GitHub organization. Anyone in the org can sign in.</p>
+    <p style="font-size:12px;color:var(--pp-text-muted);margin-top:8px">Members are managed via your GitHub organization. Anyone in the org can sign in.</p>
   </div>`;
 }
 
@@ -341,7 +341,7 @@ export function renderIntegrationsSection() {
         </svg>
         <div>
           <strong>Slack</strong>
-          <span class="card-status" style="display:block;font-size:12px;color:${slackConfigured ? 'var(--success)' : 'var(--muted)'}">${slackConfigured ? 'Configured via environment variable' : 'Not configured'}</span>
+          <span class="card-status" style="display:block;font-size:12px;color:${slackConfigured ? 'var(--pp-success)' : 'var(--pp-text-muted)'}">${slackConfigured ? 'Configured via environment variable' : 'Not configured'}</span>
         </div>
       </div>
       <p class="card-desc">${slackConfigured

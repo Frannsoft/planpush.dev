@@ -24,33 +24,35 @@ export function safeRedirectUrl(raw, fallback = '/dashboard') {
 // Shared design tokens + reset CSS used by all standalone HTML pages
 export const BASE_PAGE_CSS = `
   :root {
-    --bg: #f0f1f3; --bg2: #ffffff; --bg3: #e8e9ec;
-    --text: #16171a; --muted: #6b7685; --border: #d0d7de; --border-bold: #b8c0c8;
-    --accent: #0b8a4b; --accent-hover: #076835; --accent-bg: #e6f7ed;
-    --error: #d62411; --error-bg: #fde8e6;
-    --success: #0a8f52; --success-bg: #e6f9ee;
-    --warning: #d4620a; --warning-bg: #fff3e6;
-    --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
-    --shadow-md: 0 4px 12px rgba(0,0,0,.08);
-    --radius: 8px; --radius-lg: 12px;
-    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #16171a; --bg2: #1e2228; --bg3: #232830;
-      --text: #fafdff; --muted: #5bc0de; --border: #2a3540; --border-bold: #3d4f5c;
-      --accent: #10d275; --accent-hover: #2dd882; --accent-bg: #0a2015;
-      --error: #f44336; --error-bg: #300a0a;
-      --success: #3bdf8c; --success-bg: #0d2818;
-      --warning: #ff8426; --warning-bg: #2a1a00;
-      --shadow-sm: 0 1px 2px rgba(0,0,0,.2);
-      --shadow-md: 0 4px 12px rgba(0,0,0,.3);
-    }
+    color-scheme: light dark;
+    --pp-bg: light-dark(#f0f1f3, #16171a);
+    --pp-surface-1: light-dark(#ffffff, #1e2228);
+    --pp-surface-2: light-dark(#e8e9ec, #232830);
+    --pp-text: light-dark(#16171a, #fafdff);
+    --pp-text-muted: light-dark(#6b7685, #5bc0de);
+    --pp-border: light-dark(#d0d7de, #2a3540);
+    --pp-border-bold: light-dark(#b8c0c8, #3d4f5c);
+    --pp-accent: light-dark(#0b8a4b, #10d275);
+    --pp-accent-hover: light-dark(#076835, #2dd882);
+    --pp-accent-soft: light-dark(#e6f7ed, #0a2015);
+    --pp-error: light-dark(#d62411, #f44336);
+    --pp-error-bg: light-dark(#fde8e6, #300a0a);
+    --pp-success: light-dark(#0a8f52, #3bdf8c);
+    --pp-success-bg: light-dark(#e6f9ee, #0d2818);
+    --pp-warning: light-dark(#d4620a, #ff8426);
+    --pp-warning-bg: light-dark(#fff3e6, #2a1a00);
+    --pp-shadow-sm: 0 1px 2px light-dark(rgba(0,0,0,.05), rgba(0,0,0,.2));
+    --pp-shadow-md: 0 4px 12px light-dark(rgba(0,0,0,.08), rgba(0,0,0,.3));
+    --pp-radius: 8px; --pp-radius-lg: 12px;
+    --pp-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --pp-font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }`;
+  body { font-family: var(--pp-font); background: var(--pp-bg); color: var(--pp-text); font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  :focus-visible { outline: 2px solid var(--pp-accent); outline-offset: 2px; border-radius: 4px; }`;
+
+// Synchronous inline script to prevent flash of wrong theme — must be injected before <style> tags
+export const THEME_FLASH_SCRIPT = `<script>(function(){var t=localStorage.getItem('pp-theme');if(t==='dark'||t==='light')document.documentElement.style.colorScheme=t;})()</script>`;
 
 // Build reusable header bar HTML
 export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardLink = true, canPublish = false, isPrivate = false }) {
@@ -89,6 +91,10 @@ export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardL
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           <span class="pp-menu-label">Plan Info</span>
         </button>
+        <button id="pp-theme-btn" class="pp-header-btn" title="Toggle theme" aria-label="Toggle theme">
+          <svg id="pp-theme-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg id="pp-theme-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
         <span id="pp-header-user">${userName}</span>
         ${dashboardLink}
         <button id="pp-logout-btn" class="pp-header-btn" title="Sign out">
@@ -105,14 +111,12 @@ export function buildHeaderHTML({ displayName, userId, apiOrigin, showDashboardL
 
 // Shared header CSS (used by both dashboard and overlay)
 export const HEADER_CSS = `
-#pp-header{position:fixed;top:0;left:0;right:0;height:48px;background:var(--pp-bg,#f0f1f3);border-bottom:1px solid var(--pp-border,#d0d7de);z-index:100001;padding:0 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;color:var(--pp-text,#16171a);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);background:color-mix(in srgb, var(--pp-bg,#f0f1f3) 85%, transparent)}
+#pp-header{position:fixed;top:0;left:0;right:0;height:48px;background:var(--pp-bg,#f0f1f3);border-bottom:1px solid var(--pp-border,#d0d7de);z-index:100001;padding:0 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;color:var(--pp-text,#16171a);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);background:color-mix(in srgb, var(--pp-bg,#f0f1f3) 85%, transparent);box-shadow:0 1px 0 light-dark(transparent, rgba(255,255,255,.04))}
 #pp-header-inner{max-width:1100px;margin:0 auto;height:100%;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
-@media(prefers-color-scheme:dark){#pp-header{box-shadow:0 1px 0 rgba(255,255,255,.04)}}
 #pp-header-left{display:flex;align-items:center;gap:10px}
 #pp-header-logo{display:flex;align-items:center;gap:7px;font-weight:700;font-size:14px;color:var(--pp-text,#16171a);text-decoration:none;letter-spacing:-0.01em;transition:opacity .15s}
 #pp-header-logo:hover{opacity:.7}
-#pp-private-badge{display:inline-flex;align-items:center;gap:4px;background:#f3e8ff;color:#7c3aed;font-size:11px;font-weight:600;padding:2px 8px 2px 6px;border-radius:20px;margin-left:8px;white-space:nowrap}
-@media(prefers-color-scheme:dark){#pp-private-badge{background:#2e1065;color:#c4b5fd}}
+#pp-private-badge{display:inline-flex;align-items:center;gap:4px;background:light-dark(#f3e8ff,#2e1065);color:light-dark(#7c3aed,#c4b5fd);font-size:11px;font-weight:600;padding:2px 8px 2px 6px;border-radius:20px;margin-left:8px;white-space:nowrap}
 #pp-header-right{display:flex;align-items:center;gap:4px}
 #pp-header-user{font-size:12px;color:var(--pp-text-muted,#6b7685);padding:0 8px}
 .pp-header-btn{display:flex;align-items:center;justify-content:center;gap:4px;background:none;border:none;cursor:pointer;color:var(--pp-text-muted,#6b7685);font-size:12px;font-family:inherit;padding:0;width:36px;height:36px;border-radius:8px;text-decoration:none;transition:background .15s,color .15s}
@@ -122,7 +126,7 @@ export const HEADER_CSS = `
 .pp-header-btn-accent{width:auto;padding:0 12px;gap:6px;background:var(--pp-accent,#0b8a4b);color:#fff;font-weight:600;font-size:12px}
 .pp-header-btn-accent:hover{background:var(--pp-accent-hover,#076835);color:#fff}
 .pp-header-btn-accent svg{stroke:#fff}
-.pp-header-btn-accent.pp-active{background:#f0f1f3;color:var(--pp-accent,#0b8a4b);box-shadow:inset 0 0 0 1.5px var(--pp-accent,#0b8a4b)}
+.pp-header-btn-accent.pp-active{background:var(--pp-bg,#f0f1f3);color:var(--pp-accent,#0b8a4b);box-shadow:inset 0 0 0 1.5px var(--pp-accent,#0b8a4b)}
 .pp-header-btn-accent.pp-active:hover{background:var(--pp-accent-soft,#e6f7ed)}
 .pp-header-btn-accent.pp-active svg{stroke:var(--pp-accent,#0b8a4b)}
 #pp-publish-btn{width:auto;padding:0 12px;gap:6px;background:var(--pp-surface-1,#ffffff);color:var(--pp-text,#16171a);font-weight:600;font-size:12px;border:1px solid var(--pp-border,#d0d7de)}
@@ -132,22 +136,24 @@ export const HEADER_CSS = `
 #pp-comments-btn-badge{display:none}
 .pp-menu-label{display:none}
 #pp-header-actions{display:flex;align-items:center;gap:4px}
+#pp-theme-btn{position:relative;overflow:hidden}
+#pp-theme-btn svg{position:absolute;transition:opacity .2s,transform .2s}
+#pp-theme-btn .pp-hidden{opacity:0;transform:scale(.5)}
 .pp-menu-toggle{display:none}
 @media(max-width:600px){
 #pp-header-inner{padding:0 8px}
 #pp-comments-btn-label{display:none}
 #pp-publish-btn-label{display:none}
 #pp-publish-btn{padding:0;width:36px;border:none}
-#pp-comments-btn-badge{display:inline-block;background:#f0f1f3;color:var(--pp-accent,#0b8a4b);font-size:11px;font-weight:700;min-width:18px;height:18px;line-height:18px;text-align:center;border-radius:9px;padding:0 4px}
+#pp-comments-btn-badge{display:inline-block;background:var(--pp-bg,#f0f1f3);color:var(--pp-accent,#0b8a4b);font-size:11px;font-weight:700;min-width:18px;height:18px;line-height:18px;text-align:center;border-radius:9px;padding:0 4px}
 .pp-header-btn-accent{width:auto;padding:0 8px;gap:5px}
 .pp-menu-toggle{display:flex;width:40px;height:40px}
-#pp-header-actions{display:none;position:absolute;top:48px;right:0;flex-direction:column;align-items:stretch;background:var(--pp-bg,#f0f1f3);border:1px solid var(--pp-border,#d0d7de);border-top:none;border-radius:0 0 12px 12px;box-shadow:0 8px 24px rgba(0,0,0,.12);padding:6px;min-width:180px;z-index:100002}
+#pp-header-actions{display:none;position:absolute;top:48px;right:0;flex-direction:column;align-items:stretch;background:var(--pp-bg,#f0f1f3);border:1px solid var(--pp-border,#d0d7de);border-top:none;border-radius:0 0 12px 12px;box-shadow:0 8px 24px light-dark(rgba(0,0,0,.12),rgba(0,0,0,.4));padding:6px;min-width:180px;z-index:100002}
 #pp-header-actions.pp-menu-open{display:flex}
 #pp-header-actions .pp-header-btn{width:100%;height:40px;justify-content:flex-start;padding:0 12px;gap:10px;border-radius:8px;font-size:13px}
 #pp-header-actions .pp-header-btn svg{width:16px;height:16px}
 #pp-header-actions .pp-menu-label{display:inline}
 #pp-header-actions #pp-header-user{display:block;padding:8px 12px;font-size:13px;color:var(--pp-text,#16171a);font-weight:600;border-bottom:1px solid var(--pp-border,#d0d7de);margin-bottom:2px}
-@media(prefers-color-scheme:dark){#pp-header-actions{box-shadow:0 8px 24px rgba(0,0,0,.4)}}
 }`;
 
 // Header interaction JS — logout + mobile menu toggle
@@ -170,5 +176,29 @@ export const LOGOUT_JS = `
         actions.classList.remove('pp-menu-open');
       }
     });
+  }
+  // Theme toggle
+  var themeBtn = document.getElementById('pp-theme-btn');
+  if (themeBtn) {
+    var sun = document.getElementById('pp-theme-sun');
+    var moon = document.getElementById('pp-theme-moon');
+    function applyThemeIcon() {
+      var cs = document.documentElement.style.colorScheme;
+      var isDark = cs === 'dark' || (!cs && window.matchMedia('(prefers-color-scheme:dark)').matches);
+      sun.style.display = isDark ? 'none' : '';
+      moon.style.display = isDark ? '' : 'none';
+      sun.classList.toggle('pp-hidden', isDark);
+      moon.classList.toggle('pp-hidden', !isDark);
+    }
+    applyThemeIcon();
+    themeBtn.addEventListener('click', function() {
+      var cs = document.documentElement.style.colorScheme;
+      var isDark = cs === 'dark' || (!cs && window.matchMedia('(prefers-color-scheme:dark)').matches);
+      var next = isDark ? 'light' : 'dark';
+      document.documentElement.style.colorScheme = next;
+      localStorage.setItem('pp-theme', next);
+      applyThemeIcon();
+    });
+    window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change', applyThemeIcon);
   }
 })();`;

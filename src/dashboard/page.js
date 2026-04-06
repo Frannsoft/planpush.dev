@@ -1,4 +1,4 @@
-import { BASE_PAGE_CSS, HEADER_CSS, LOGOUT_JS, buildHeaderHTML } from '../utils/html.js';
+import { BASE_PAGE_CSS, HEADER_CSS, LOGOUT_JS, THEME_FLASH_SCRIPT, buildHeaderHTML } from '../utils/html.js';
 import { DASHBOARD_CSS } from './css.js';
 import { DASHBOARD_JS } from './client.js';
 import {
@@ -24,14 +24,9 @@ export function dashboardPage(data, baseUrl, tokenData, isAdmin) {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PlanPush — Dashboard</title>
+${THEME_FLASH_SCRIPT}
 <style>
   ${BASE_PAGE_CSS}
-  :root {
-    --pp-bg: var(--bg); --pp-surface-1: var(--bg2); --pp-border: var(--border);
-    --pp-text: var(--text); --pp-text-muted: var(--muted); --pp-accent: var(--accent);
-    --pp-accent-soft: var(--accent-bg); --pp-success: var(--success);
-    --pp-accent-hover: var(--accent-hover);
-  }
   ${HEADER_CSS}
   ${DASHBOARD_CSS}
 </style>
