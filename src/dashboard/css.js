@@ -2,7 +2,7 @@
 
 export const DASHBOARD_CSS = `
   body { min-height: 100vh; display: flex; flex-direction: column; padding-top: 48px; }
-  @media(prefers-color-scheme:dark){.pp-header-btn:hover{background:var(--bg3,#1c2128)}}
+  @media(prefers-color-scheme:dark){.pp-header-btn:hover{background:var(--bg3,#232830)}}
 
   main { max-width: 960px; margin: 0 auto; padding: 32px 24px; flex: 1; width: 100%; }
 

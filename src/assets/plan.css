@@ -7,34 +7,34 @@
   color-scheme: light dark;
 
   /* Surfaces */
-  --pp-bg:        light-dark(#ffffff, #0d1117);
-  --pp-surface-1: light-dark(#f6f8fa, #161b22);
-  --pp-surface-2: light-dark(#eef1f5, #1c2333);
-  --pp-surface-3: light-dark(#e4e8ee, #242d3d);
+  --pp-bg:        light-dark(#f0f1f3, #16171a);
+  --pp-surface-1: light-dark(#ffffff, #1e2228);
+  --pp-surface-2: light-dark(#e8e9ec, #232830);
+  --pp-surface-3: light-dark(#dce0e4, #2a3540);
 
   /* Text */
-  --pp-text:       light-dark(#1a1d23, #e6edf3);
-  --pp-text-muted: light-dark(#57606a, #8d96a0);
-  --pp-text-faint: light-dark(#8b949e, #484f58);
+  --pp-text:       light-dark(#16171a, #fafdff);
+  --pp-text-muted: light-dark(#6b7685, #5bc0de);
+  --pp-text-faint: light-dark(#a0aab4, #234975);
 
   /* Accent */
-  --pp-accent:       light-dark(#2563eb, #58a6ff);
-  --pp-accent-soft:  light-dark(#eff4ff, #152238);
-  --pp-accent-hover: light-dark(#1d4ed8, #79c0ff);
+  --pp-accent:       light-dark(#0b8a4b, #10d275);
+  --pp-accent-soft:  light-dark(#e6f7ed, #0a2015);
+  --pp-accent-hover: light-dark(#076835, #2dd882);
 
   /* Semantic */
-  --pp-success:     light-dark(#16a34a, #3fb950);
-  --pp-success-bg:  light-dark(#dcfce7, #0d2818);
-  --pp-warning:     light-dark(#ca8a04, #d29922);
-  --pp-warning-bg:  light-dark(#fef9c3, #2a2000);
-  --pp-danger:      light-dark(#dc2626, #f85149);
-  --pp-danger-bg:   light-dark(#fee2e2, #300a0a);
-  --pp-info:        light-dark(#2563eb, #58a6ff);
-  --pp-info-bg:     light-dark(#dbeafe, #0d1f3c);
+  --pp-success:     light-dark(#0a8f52, #3bdf8c);
+  --pp-success-bg:  light-dark(#e6f9ee, #0d2818);
+  --pp-warning:     light-dark(#d4620a, #ff8426);
+  --pp-warning-bg:  light-dark(#fff3e6, #2a1a00);
+  --pp-danger:      light-dark(#d62411, #f44336);
+  --pp-danger-bg:   light-dark(#fde8e6, #300a0a);
+  --pp-info:        light-dark(#007899, #5bc0de);
+  --pp-info-bg:     light-dark(#e6f5f8, #0a1f2a);
 
   /* Borders */
-  --pp-border:      light-dark(#d1d9e0, #30363d);
-  --pp-border-bold: light-dark(#bcc3cd, #484f58);
+  --pp-border:      light-dark(#d0d7de, #2a3540);
+  --pp-border-bold: light-dark(#b8c0c8, #3d4f5c);
 
   /* Shadows */
   --pp-shadow-sm: 0 1px 2px light-dark(rgba(0,0,0,.06), rgba(0,0,0,.3));
