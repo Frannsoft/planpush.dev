@@ -1,7 +1,7 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
-import KnexSessionStore from 'connect-session-knex';
+import { ConnectSessionKnexStore } from 'connect-session-knex';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { knex } from './db.js';
@@ -76,20 +76,21 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.text({ type: 'text/html', limit: '4mb' }));
 app.use(cookieParser());
 
-// Session storage (express-session with Knex store)
-const Store = KnexSessionStore(session);
+// Session storage (express-session with Knex store).
+// Idle timeout = rolling cookie maxAge (reset on each response); the absolute
+// max-age is enforced separately in verifyRequest against session.created_at.
 const sessionIdleTimeout = process.env.SESSION_IDLE_TIMEOUT ? parseInt(process.env.SESSION_IDLE_TIMEOUT) * 1000 : 8 * 60 * 60 * 1000; // 8h default
-const sessionMaxAge = process.env.SESSION_MAX_AGE ? parseInt(process.env.SESSION_MAX_AGE) * 1000 : 7 * 24 * 60 * 60 * 1000; // 7d default
 app.use(session({
   secret: process.env.SECRET_KEY,
-  store: new Store({ knex, tableName: 'sessions_store' }),
+  store: new ConnectSessionKnexStore({ knex, tableName: 'sessions_store', createTable: false }),
   resave: false,
   saveUninitialized: false,
+  rolling: true,
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: sessionMaxAge,
+    maxAge: sessionIdleTimeout,
     path: '/',
   },
   name: '__session',

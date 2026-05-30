@@ -3,6 +3,10 @@ import { knex } from '../db.js';
 import { kv } from '../kv.js';
 import { can } from '../utils/rbac.js';
 
+// Absolute browser-session lifetime, enforced against session.created_at; default 7d.
+// (Idle timeout is the rolling express-session cookie maxAge configured in app.js.)
+const SESSION_MAX_AGE_MS = process.env.SESSION_MAX_AGE ? parseInt(process.env.SESSION_MAX_AGE) * 1000 : 7 * 24 * 60 * 60 * 1000;
+
 // signSession/verifySession: for OAuth CSRF state tokens only (not for session storage)
 export function signSession(payload) {
   const secret = process.env.SECRET_KEY;
@@ -36,6 +40,7 @@ export function setSessionCookie(req, payload) {
   req.session.user_id = payload.user_id;
   req.session.display_name = payload.display_name;
   req.session.role = payload.role;
+  req.session.created_at = Date.now();
 }
 
 export function clearSessionCookie(req, callback) {
@@ -58,6 +63,12 @@ export async function verifyRequest(req) {
 
   // Path 2: Session (browser via express-session)
   if (!tokenData && req.session?.user_id) {
+    // Enforce absolute max-age against session creation time (idle timeout is the
+    // rolling express-session cookie; this caps total lifespan regardless of activity).
+    if (req.session.created_at && (Date.now() - req.session.created_at) > SESSION_MAX_AGE_MS) {
+      req.session.destroy(() => {});
+      return null;
+    }
     tokenData = {
       user_id: req.session.user_id,
       display_name: req.session.display_name,
