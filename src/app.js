@@ -18,6 +18,7 @@ import { handleArchiveSession, handlePublishSession, handleRecordViews, handleGe
 import { handleListTokens, handleRevokeToken } from './routes/tokens.js';
 import { handleAsset } from './routes/assets.js';
 import { scimRouter } from './scim/index.js';
+import { createHmac } from 'crypto';
 
 // Validate required env vars at startup
 const AUTH_PROVIDER = process.env.AUTH_PROVIDER || 'github';
@@ -200,6 +201,52 @@ app.get('/p/:sessionId', requireAuthOrRedirect, handleServe);
 
 // SCIM 2.0 provisioning (separate bearer auth, not session-based)
 app.use('/scim/v2', scimRouter);
+
+// E2E test helper routes (test environment only - registered inline)
+if (process.env.NODE_ENV === 'test') {
+  app.post('/e2e/auth/session', (req, res) => {
+    const { userId, displayName, role } = req.body;
+    if (!userId || !displayName) {
+      return res.status(400).json({ error: 'userId and displayName required' });
+    }
+    req.session.user_id = userId;
+    req.session.display_name = displayName;
+    req.session.role = role || 'member';
+    req.session.created_at = Date.now();
+    req.session.save((err) => {
+      if (err) {
+        return res.status(500).json({ error: 'Failed to save session', details: err.message });
+      }
+      const secret = process.env.SECRET_KEY;
+      const sid = req.sessionID;
+      const hmac = createHmac('sha256', secret);
+      hmac.update(sid);
+      const digest = hmac.digest('base64');
+      const sig = digest.replace(/=/g, '');
+      const signedCookie = `s:${sid}.${sig}`;
+      res.json({
+        sessionCookie: signedCookie,
+        sessionId: sid,
+        userId,
+        displayName,
+        role,
+      });
+    });
+  });
+
+  app.get('/e2e/test-data', async (req, res) => {
+    try {
+      const { kv } = await import('./kv.js');
+      const data = await kv.get('e2e:test-credentials', 'json');
+      if (!data) {
+        return res.status(404).json({ error: 'test-data not found' });
+      }
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+}
 
 // 404
 app.use((req, res) => {
