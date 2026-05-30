@@ -707,3 +707,8 @@ code{
   .plan-header h1{font-size: 20px}
   .plan-section > h2{font-size: 18px}
 }
+
+/* ===== Reduce motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}
+}

@@ -62,7 +62,10 @@ const SIDEBAR_CSS = `
 [data-anchor].pp-has-comments.pp-anchor-highlight{outline-width:3px}
 .pp-bubble{position:absolute;top:-14px;right:-14px;background:var(--pp-accent,#0b8a4b);color:#fff;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;cursor:pointer;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.2);line-height:1.4;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:transform .15s,box-shadow .15s}
 .pp-bubble:hover{transform:scale(1.08);box-shadow:0 4px 14px rgba(0,0,0,.25)}
-.pp-bubble svg{width:16px;height:16px;flex-shrink:0}`;
+.pp-bubble svg{width:16px;height:16px;flex-shrink:0}
+@media (prefers-reduced-motion: reduce) {
+  *{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}
+}`;
 
 const SIDEBAR_HTML = `
 <div id="pp-sidebar">
@@ -494,7 +497,10 @@ const INFO_PANEL_CSS = `
 #pp-share-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--pp-text,#16171a);color:var(--pp-bg,#f0f1f3);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;z-index:100002;box-shadow:0 4px 16px rgba(0,0,0,.2)}
 #pp-share-toast.pp-visible{opacity:1;transform:translateX(-50%) translateY(0)}
 
-.pp-info-loading{text-align:center;padding:32px 16px;color:var(--pp-text-muted,#6b7685);font-size:13px}`;
+.pp-info-loading{text-align:center;padding:32px 16px;color:var(--pp-text-muted,#6b7685);font-size:13px}
+@media (prefers-reduced-motion: reduce) {
+  *{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}
+}`;
 
 const INFO_PANEL_HTML = `
 <div id="pp-version-banner"><span id="pp-version-banner-text"></span></div>

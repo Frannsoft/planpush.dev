@@ -177,4 +177,9 @@ export const DASHBOARD_CSS = `
     .tab-bar { gap: 0; }
     .tab-btn { padding: 8px 12px; font-size: 11px; }
   }
+
+  /* --- Reduce motion --- */
+  @media (prefers-reduced-motion: reduce) {
+    *{animation-duration:0.01ms !important;animation-iteration-count:1 !important;transition-duration:0.01ms !important;scroll-behavior:auto !important}
+  }
 `;
