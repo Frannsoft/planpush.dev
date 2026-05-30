@@ -127,6 +127,39 @@ export const DASHBOARD_CSS = `
   .session-card-meta .comment-badge { font-size: 10px; padding: 1px 6px; }
   .session-card-actions { margin-top: 8px; display: flex; gap: 6px; }
 
+  /* --- Settings section --- */
+  .settings-grid { display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px; }
+  @media (min-width: 768px) { .settings-grid { grid-template-columns: 1fr 1fr; } }
+  .settings-section { background: var(--pp-surface-1); border: 1px solid var(--pp-border); border-radius: var(--pp-radius-lg); padding: 20px; box-shadow: var(--pp-shadow-sm); }
+  .settings-section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--pp-text); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--pp-border); }
+  .settings-group { margin-bottom: 16px; }
+  .settings-label { display: block; font-size: 12px; font-weight: 600; color: var(--pp-text); margin-bottom: 6px; }
+  .settings-field { display: flex; gap: 8px; align-items: center; }
+  .settings-input { flex: 1; min-width: 0; padding: 8px 12px; border: 1px solid var(--pp-border); border-radius: var(--pp-radius); background: var(--pp-surface-2); color: var(--pp-text); font-family: inherit; font-size: 13px; transition: border-color .15s; }
+  .settings-input:focus { border-color: var(--pp-accent); outline: none; box-shadow: 0 0 0 3px var(--pp-accent-soft); }
+  .settings-input:disabled { opacity: 0.6; cursor: not-allowed; }
+  .settings-textarea { flex: 1; padding: 8px 12px; border: 1px solid var(--pp-border); border-radius: var(--pp-radius); background: var(--pp-surface-2); color: var(--pp-text); font-family: var(--pp-font-mono); font-size: 12px; min-height: 80px; resize: vertical; transition: border-color .15s; }
+  .settings-textarea:focus { border-color: var(--pp-accent); outline: none; box-shadow: 0 0 0 3px var(--pp-accent-soft); }
+  .settings-textarea:disabled { opacity: 0.6; cursor: not-allowed; }
+  .settings-secret-replace { padding: 6px 12px; border: 1px solid var(--pp-border); border-radius: 6px; background: var(--pp-surface-1); color: var(--pp-text); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; white-space: nowrap; }
+  .settings-secret-replace:hover { background: var(--pp-surface-2); border-color: var(--pp-border-bold); }
+  .test-connection-btn { padding: 6px 12px; border: 1px solid var(--pp-border); border-radius: 6px; background: var(--pp-accent-soft); color: var(--pp-accent); font-family: inherit; font-size: 11px; font-weight: 600; cursor: pointer; transition: all .15s; white-space: nowrap; }
+  .test-connection-btn:hover { background: var(--pp-accent); color: white; }
+  .test-connection-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+  .settings-hint { font-size: 11px; color: var(--pp-text-muted); margin-top: 4px; }
+  .settings-actions { display: flex; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--pp-border); }
+  .btn-primary { padding: 8px 20px; background: var(--pp-accent); color: white; border: none; border-radius: 6px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s; }
+  .btn-primary:hover { background: var(--pp-accent-hover); }
+  .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .btn-secondary { padding: 8px 20px; background: var(--pp-surface-1); color: var(--pp-text); border: 1px solid var(--pp-border); border-radius: 6px; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-secondary:hover { background: var(--pp-surface-2); border-color: var(--pp-border-bold); }
+  .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+  .settings-status { font-size: 12px; color: var(--pp-text-muted); align-self: center; }
+  .restart-banner { background: var(--pp-warning-bg); color: var(--pp-warning); border: 1px solid var(--pp-warning); border-radius: var(--pp-radius-lg); padding: 16px; margin-bottom: 20px; }
+  .restart-banner-content { font-size: 13px; }
+  .restart-banner-content strong { font-weight: 700; }
+  .restart-banner-content p { margin: 6px 0 0 0; font-size: 12px; line-height: 1.5; }
+
   /* --- Footer --- */
   footer { background: var(--pp-surface-1); border-top: 1px solid var(--pp-border); padding: 18px 24px; text-align: center; font-size: 11px; color: var(--pp-text-muted); letter-spacing: 0.02em; }
 

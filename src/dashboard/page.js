@@ -4,13 +4,14 @@ import { DASHBOARD_JS } from './client.js';
 import {
   renderStatsBar, renderTabBar, renderSessionsSection,
   renderActivityFeed, renderMyComments, renderTokenSection,
-  renderMembersSection, renderIntegrationsSection,
+  renderMembersSection, renderIntegrationsSection, renderSettingsSection,
 } from './sections.js';
 
 export function dashboardPage(data, baseUrl, tokenData, userPermissions) {
   const { sessions, members, myComments, activity, tokens, stats } = data;
   const userName = tokenData.display_name || tokenData.github_username || '';
   const isAdmin = userPermissions && userPermissions.includes('session_view_private');
+  const hasUserManage = userPermissions && userPermissions.includes('user_manage');
 
   const headerContent = buildHeaderHTML({
     displayName: userName,
@@ -47,6 +48,7 @@ ${THEME_FLASH_SCRIPT}
   ${renderTokenSection(tokens)}
   ${isAdmin ? renderMembersSection(members) : ''}
   ${isAdmin ? renderIntegrationsSection() : ''}
+  ${hasUserManage ? renderSettingsSection() : ''}
 </main>
 
 <footer>&copy; ${new Date().getFullYear()} PlanPush</footer>

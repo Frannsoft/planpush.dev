@@ -55,6 +55,7 @@ export function renderStatsBar(stats, userPermissions) {
 // --- Tab bar ---
 export function renderTabBar(userPermissions, stats, myCommentsCount, activityCount) {
   const isAdmin = userPermissions && userPermissions.includes('session_view_private');
+  const hasUserManage = userPermissions && userPermissions.includes('user_manage');
   return `
   <nav class="tab-bar" role="tablist">
     <button class="tab-btn active" data-tab="sessions" role="tab" aria-selected="true">Sessions<span class="tab-count">${stats.sessionCount}</span></button>
@@ -63,6 +64,7 @@ export function renderTabBar(userPermissions, stats, myCommentsCount, activityCo
     <button class="tab-btn" data-tab="tokens" role="tab">CLI Connections<span class="tab-count">${stats.tokenCount}</span></button>
     ${isAdmin ? `<button class="tab-btn" data-tab="members" role="tab">Members<span class="tab-count">${stats.memberCount}</span></button>` : ''}
     ${isAdmin ? '<button class="tab-btn" data-tab="integrations" role="tab">Integrations</button>' : ''}
+    ${hasUserManage ? '<button class="tab-btn" data-tab="settings" role="tab">Settings</button>' : ''}
   </nav>`;
 }
 
@@ -358,6 +360,113 @@ export function renderIntegrationsSection() {
         ? 'Slack notifications are active. Comment, resolve, and plan update events will be posted.'
         : 'Set the <code>SLACK_WEBHOOK_URL</code> environment variable to enable Slack notifications.'
       }</p>
+    </div>
+  </div>`;
+}
+
+// --- Settings (admin only) ---
+export function renderSettingsSection() {
+  return `
+  <div class="tab-section" data-section="settings">
+    <div id="settings-loading" class="empty">
+      <div class="empty-title">Loading settings...</div>
+    </div>
+    <div id="settings-content" style="display:none">
+      <div id="restart-banner" class="restart-banner" style="display:none">
+        <div class="restart-banner-content">
+          <strong>Server restart required</strong>
+          <p>Settings saved. Authentication and routing settings require a server restart to take effect.</p>
+        </div>
+      </div>
+
+      <div class="settings-grid">
+        <!-- Authentication section -->
+        <div class="settings-section">
+          <div class="settings-section-title">Authentication</div>
+          <div class="settings-group">
+            <label class="settings-label">Provider</label>
+            <div class="settings-field">
+              <input type="text" class="settings-input" id="setting-AUTH_PROVIDER" placeholder="github or okta" />
+            </div>
+            <div class="settings-hint">Router: changes require restart</div>
+          </div>
+          <div class="settings-group">
+            <label class="settings-label">Okta Issuer</label>
+            <div class="settings-field">
+              <input type="text" class="settings-input" id="setting-OKTA_ISSUER" placeholder="https://your-org.okta.com" />
+              <button class="test-connection-btn" data-field="OKTA_ISSUER" style="display:none">Test Connection</button>
+            </div>
+            <div class="settings-hint">Router: changes require restart</div>
+          </div>
+          <div class="settings-group">
+            <label class="settings-label">Okta Client ID</label>
+            <div class="settings-field">
+              <input type="password" class="settings-input" id="setting-OKTA_CLIENT_ID" placeholder="••••••••••••" />
+              <button class="settings-secret-replace" data-field="OKTA_CLIENT_ID">Replace</button>
+            </div>
+            <div class="settings-hint">Router: changes require restart</div>
+          </div>
+          <div class="settings-group">
+            <label class="settings-label">Okta Client Secret</label>
+            <div class="settings-field">
+              <input type="password" class="settings-input" id="setting-OKTA_CLIENT_SECRET" placeholder="••••••••••••" />
+              <button class="settings-secret-replace" data-field="OKTA_CLIENT_SECRET">Replace</button>
+            </div>
+            <div class="settings-hint">Secret field: never displayed in HTML</div>
+          </div>
+        </div>
+
+        <!-- Integrations section -->
+        <div class="settings-section">
+          <div class="settings-section-title">Integrations</div>
+          <div class="settings-group">
+            <label class="settings-label">Slack Webhook URL</label>
+            <div class="settings-field">
+              <input type="password" class="settings-input" id="setting-SLACK_WEBHOOK_URL" placeholder="••••••••••••" />
+              <button class="settings-secret-replace" data-field="SLACK_WEBHOOK_URL">Replace</button>
+            </div>
+            <div class="settings-hint">Secret field: never displayed in HTML</div>
+          </div>
+        </div>
+
+        <!-- SCIM section -->
+        <div class="settings-section">
+          <div class="settings-section-title">SCIM</div>
+          <div class="settings-group">
+            <label class="settings-label">SCIM Auth Token</label>
+            <div class="settings-field">
+              <input type="password" class="settings-input" id="setting-SCIM_AUTH_TOKEN" placeholder="••••••••••••" />
+              <button class="settings-secret-replace" data-field="SCIM_AUTH_TOKEN">Replace</button>
+            </div>
+            <div class="settings-hint">Secret field: never displayed in HTML</div>
+          </div>
+        </div>
+
+        <!-- General section -->
+        <div class="settings-section">
+          <div class="settings-section-title">General</div>
+          <div class="settings-group">
+            <label class="settings-label">Base URL</label>
+            <div class="settings-field">
+              <input type="text" class="settings-input" id="setting-BASE_URL" placeholder="https://planpush.example.com" />
+            </div>
+            <div class="settings-hint">Value-only field</div>
+          </div>
+          <div class="settings-group">
+            <label class="settings-label">Initial Admin Emails</label>
+            <div class="settings-field">
+              <textarea class="settings-textarea" id="setting-INITIAL_ADMIN_EMAILS" placeholder="admin1@example.com&#10;admin2@example.com"></textarea>
+            </div>
+            <div class="settings-hint">Comma or newline separated email addresses</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button id="settings-save" class="btn-primary">Save Settings</button>
+        <button id="settings-cancel" class="btn-secondary">Cancel</button>
+        <span id="settings-status" class="settings-status"></span>
+      </div>
     </div>
   </div>`;
 }

@@ -372,6 +372,197 @@ export const DASHBOARD_JS = `
   var tokensSection = document.querySelector('[data-section="tokens"]');
   if (tokensSection) tokensSection.addEventListener('click', handleAction);
 
+  // --- Settings tab ---
+  var settingsSection = document.querySelector('[data-section="settings"]');
+  if (settingsSection) {
+    initSettings();
+  }
+
+  function initSettings() {
+    var settingsLoading = document.getElementById('settings-loading');
+    var settingsContent = document.getElementById('settings-content');
+    var restartBanner = document.getElementById('restart-banner');
+    var saveBtn = document.getElementById('settings-save');
+    var cancelBtn = document.getElementById('settings-cancel');
+    var statusEl = document.getElementById('settings-status');
+
+    // Load settings from API
+    fetch('/api/admin/settings', { credentials: 'same-origin' })
+      .then(function(r) {
+        if (!r.ok) throw new Error('Failed to load settings');
+        return r.json();
+      })
+      .then(function(data) {
+        // Populate form fields
+        populateSettingsForm(data.settings);
+        settingsLoading.style.display = 'none';
+        settingsContent.style.display = 'block';
+      })
+      .catch(function(err) {
+        console.error('Settings load error:', err);
+        var errDiv = document.createElement('div');
+        errDiv.className = 'empty';
+        var titleDiv = document.createElement('div');
+        titleDiv.className = 'empty-title';
+        titleDiv.textContent = 'Error loading settings';
+        var descDiv = document.createElement('div');
+        descDiv.className = 'empty-desc';
+        descDiv.textContent = err.message;
+        errDiv.appendChild(titleDiv);
+        errDiv.appendChild(descDiv);
+        settingsLoading.parentNode.replaceChild(errDiv, settingsLoading);
+      });
+
+    function populateSettingsForm(settings) {
+      settings.forEach(function(setting) {
+        var input = document.getElementById('setting-' + setting.key);
+        if (!input) return;
+
+        // Mark read-only fields
+        if (setting.isLocked) {
+          input.disabled = true;
+          input.title = 'Set via environment variable';
+        }
+
+        // For secret fields, show placeholder instead of value
+        if (setting.isSecret) {
+          input.type = 'password';
+          input.placeholder = setting.isSet ? '••••••••••••' : '(not set)';
+          input.value = '';
+          // Show test connection button for OKTA_ISSUER
+          if (setting.key === 'OKTA_ISSUER') {
+            var testBtn = document.querySelector('button[data-field="OKTA_ISSUER"]');
+            if (testBtn && setting.isSet) testBtn.style.display = 'inline-block';
+          }
+        } else {
+          // For non-secret fields, show actual value
+          if (setting.key === 'INITIAL_ADMIN_EMAILS') {
+            input.value = setting.value || '';
+          } else {
+            input.value = setting.value || '';
+          }
+        }
+      });
+    }
+
+    // Save settings
+    saveBtn.addEventListener('click', function() {
+      saveSettings();
+    });
+
+    // Cancel
+    cancelBtn.addEventListener('click', function() {
+      location.reload();
+    });
+
+    function saveSettings() {
+      saveBtn.disabled = true;
+      statusEl.textContent = 'Saving...';
+      statusEl.style.color = 'var(--pp-text-muted)';
+
+      var updates = {};
+      var fieldsToSave = ['AUTH_PROVIDER', 'OKTA_ISSUER', 'OKTA_CLIENT_ID', 'OKTA_CLIENT_SECRET',
+                          'INITIAL_ADMIN_EMAILS', 'SLACK_WEBHOOK_URL', 'SCIM_AUTH_TOKEN', 'BASE_URL'];
+
+      fieldsToSave.forEach(function(key) {
+        var input = document.getElementById('setting-' + key);
+        if (input && !input.disabled) {
+          var value = input.value.trim();
+          // Only include non-empty secret fields (empty means unchanged)
+          if (key === 'OKTA_CLIENT_ID' || key === 'OKTA_CLIENT_SECRET' ||
+              key === 'SLACK_WEBHOOK_URL' || key === 'SCIM_AUTH_TOKEN') {
+            // For secret fields, only send if user explicitly entered something
+            if (value && input.type === 'password' && value !== '••••••••••••') {
+              updates[key] = value;
+            }
+          } else {
+            // For non-secret fields, always send
+            updates[key] = value || null;
+          }
+        }
+      });
+
+      fetch('/api/admin/settings', {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates: updates })
+      })
+      .then(function(r) {
+        if (!r.ok) {
+          var contentType = r.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            return r.json().then(function(data) {
+              throw new Error(data.error || 'Failed to save settings');
+            });
+          }
+          throw new Error('Failed to save settings');
+        }
+        return r.json();
+      })
+      .then(function(data) {
+        statusEl.textContent = 'Settings saved!';
+        statusEl.style.color = 'var(--pp-success)';
+        if (data.restartRequired) {
+          restartBanner.style.display = 'block';
+        }
+        // Reload after 1s to refresh values
+        setTimeout(function() { location.reload(); }, 1000);
+      })
+      .catch(function(err) {
+        console.error('Save error:', err);
+        statusEl.textContent = 'Error: ' + err.message;
+        statusEl.style.color = 'var(--pp-error)';
+        saveBtn.disabled = false;
+      });
+    }
+
+    // Test Okta connection
+    var testBtns = document.querySelectorAll('.test-connection-btn');
+    testBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var field = btn.dataset.field;
+        var issuerInput = document.getElementById('setting-OKTA_ISSUER');
+        if (!issuerInput) return;
+
+        var issuer = issuerInput.value.trim();
+        if (!issuer) {
+          alert('Please enter an Okta issuer URL first');
+          return;
+        }
+
+        btn.disabled = true;
+        var origText = btn.textContent;
+        btn.textContent = 'Testing...';
+
+        fetch('/api/admin/settings/test-connection', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ issuer: issuer })
+        })
+        .then(function(r) {
+          if (!r.ok) {
+            return r.json().then(function(data) {
+              throw new Error(data.error || 'Test failed');
+            });
+          }
+          return r.json();
+        })
+        .then(function(data) {
+          alert('Connection successful!\\nIssuer: ' + data.issuer);
+          btn.disabled = false;
+          btn.textContent = origText;
+        })
+        .catch(function(err) {
+          alert('Connection failed: ' + err.message);
+          btn.disabled = false;
+          btn.textContent = origText;
+        });
+      });
+    });
+  }
+
   // Initial render
   applyAll();
 

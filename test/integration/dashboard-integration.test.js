@@ -331,4 +331,111 @@ describe('GET /dashboard (Integration)', () => {
     // Revoked token should NOT appear
     expect(res.text).not.toContain(tokenLabel);
   });
+
+  it('admin with user_manage permission sees Settings tab', async () => {
+    const admin = await seedUser({ role: 'admin' });
+    const { tokenId } = await seedRefreshToken({ user_id: admin.id });
+
+    // Grant user_manage permission to admin
+    const userManagePermission = await knex('permissions').where('id', 'user_manage').first();
+    if (!userManagePermission) {
+      await knex('permissions').insert({
+        id: 'user_manage',
+        name: 'user_manage',
+        description: 'Manage users and settings',
+      });
+    }
+    const adminRole = await knex('roles').where('id', 'admin').first();
+    if (adminRole) {
+      await knex('role_permissions').insert({
+        role_id: 'admin',
+        permission_id: 'user_manage',
+      }).catch(() => {}); // Ignore duplicate key errors
+    }
+
+    const accessToken = await seedAccessToken({
+      user_id: admin.id,
+      token_id: tokenId,
+      display_name: admin.display_name,
+      role: 'admin',
+    });
+
+    const res = await request(app)
+      .get('/dashboard')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    // Should contain Settings tab button
+    expect(res.text).toContain('data-tab="settings"');
+    expect(res.text).toContain('Settings');
+    // Should contain settings section div
+    expect(res.text).toContain('data-section="settings"');
+  });
+
+  it('non-admin without user_manage permission does NOT see Settings tab', async () => {
+    const dev = await seedUser({ role: 'developer' });
+    const { tokenId } = await seedRefreshToken({ user_id: dev.id });
+    const accessToken = await seedAccessToken({
+      user_id: dev.id,
+      token_id: tokenId,
+      display_name: dev.display_name,
+      role: 'developer',
+    });
+
+    const res = await request(app)
+      .get('/dashboard')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    // Should NOT contain Settings tab
+    expect(res.text).not.toContain('data-tab="settings"');
+    expect(res.text).not.toContain('data-section="settings"');
+  });
+
+  it('Settings section renders without displaying secret values in HTML', async () => {
+    const admin = await seedUser({ role: 'admin' });
+    const { tokenId } = await seedRefreshToken({ user_id: admin.id });
+
+    // Grant user_manage permission
+    await knex('permissions').insert({
+      id: 'user_manage',
+      name: 'user_manage',
+      description: 'Manage users and settings',
+    }).catch(() => {});
+    await knex('role_permissions').insert({
+      role_id: 'admin',
+      permission_id: 'user_manage',
+    }).catch(() => {});
+
+    const accessToken = await seedAccessToken({
+      user_id: admin.id,
+      token_id: tokenId,
+      display_name: admin.display_name,
+      role: 'admin',
+    });
+
+    const res = await request(app)
+      .get('/dashboard')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    // Settings should be rendered
+    expect(res.text).toContain('data-section="settings"');
+
+    // Secret fields should be marked as password type or masked
+    // They should NOT contain actual secret values from env
+    const okta_secret = process.env.OKTA_CLIENT_SECRET;
+    const slack_webhook = process.env.SLACK_WEBHOOK_URL;
+    if (okta_secret) {
+      expect(res.text).not.toContain(okta_secret);
+    }
+    if (slack_webhook) {
+      expect(res.text).not.toContain(slack_webhook);
+    }
+
+    // Should have form fields for settings
+    expect(res.text).toContain('id="setting-AUTH_PROVIDER"');
+    expect(res.text).toContain('id="setting-OKTA_ISSUER"');
+    expect(res.text).toContain('id="setting-BASE_URL"');
+  });
 });
