@@ -44,6 +44,7 @@ export async function handleArchiveSession(req, res) {
     targetType: 'session',
     targetId: sessionId,
     meta: { title: session.title },
+    requestId: req.requestId,
   });
 
   res.json({ ok: true, id: sessionId, archived });
@@ -91,6 +92,7 @@ export async function handlePublishSession(req, res) {
     targetType: 'session',
     targetId: sessionId,
     meta: { title: session.title },
+    requestId: req.requestId,
   });
 
   res.json({ ok: true, id: sessionId });
@@ -156,6 +158,7 @@ export async function handleAddGroupRoleMap(req, res) {
       targetType: 'group_role_map',
       targetId: String(id[0]),
       meta: { idp_group: idp_group.trim(), role_id },
+      requestId: req.requestId,
     });
 
     res.json({ ok: true, id: id[0] });
@@ -188,6 +191,7 @@ export async function handleDeleteGroupRoleMap(req, res) {
     targetType: 'group_role_map',
     targetId: mappingId,
     meta: { idp_group: mapping.idp_group, role_id: mapping.role_id },
+    requestId: req.requestId,
   });
 
   res.json({ ok: true });

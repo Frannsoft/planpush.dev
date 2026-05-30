@@ -148,6 +148,7 @@ export async function handlePush(req, res) {
     targetType: 'session',
     targetId: sessionId,
     meta: { version: currentVersion, is_new: !existingSessionId },
+    requestId: req.requestId,
   });
 
   res.json({

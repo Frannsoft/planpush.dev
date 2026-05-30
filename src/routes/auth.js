@@ -233,6 +233,7 @@ async function handleCallbackGithub(req, res) {
     targetType: 'user',
     targetId: userId,
     meta: { github_username: githubUsername, is_new: isNewUser },
+    requestId: req.requestId,
   });
 
   if (stateData.activate) {
@@ -360,6 +361,7 @@ async function handleCallbackOkta(req, res) {
       targetType: 'user',
       targetId: userId,
       meta: { okta_subject: subject, reason: 'no_roles_mapped' },
+      requestId: req.requestId,
     });
     return res.status(403).set('Content-Type', 'text/html; charset=UTF-8').send(getAccessDeniedPage());
   }
@@ -385,6 +387,7 @@ async function handleCallbackOkta(req, res) {
     targetType: 'user',
     targetId: userId,
     meta: { okta_subject: subject, is_new: isNewUser, groups: groups.length },
+    requestId: req.requestId,
   });
 
   if (stateData.activate) {
@@ -508,6 +511,7 @@ export async function handleAuthDeviceToken(req, res) {
       targetType: 'user',
       targetId: user.id,
       meta: { github_username: user.github_username },
+      requestId: req.requestId,
     });
 
     return res.json({
