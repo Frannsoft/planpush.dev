@@ -116,3 +116,79 @@ export async function handleRecordViews(req, res) {
   }
   res.json({ ok: true });
 }
+
+// GET /api/admin/group-role-map — list group mappings (admin only)
+export async function handleGetGroupRoleMap(req, res) {
+  const mappings = await knex('group_role_map')
+    .join('roles', 'group_role_map.role_id', 'roles.id')
+    .select('group_role_map.id', 'group_role_map.idp_group', 'roles.id as role_id', 'roles.name as role_name')
+    .orderBy('group_role_map.idp_group');
+
+  res.json(mappings);
+}
+
+// POST /api/admin/group-role-map — add mapping (admin only)
+export async function handleAddGroupRoleMap(req, res) {
+  const { idp_group, role_id } = req.body;
+
+  if (!idp_group || typeof idp_group !== 'string' || idp_group.trim().length === 0) {
+    return res.status(400).json({ error: 'invalid_idp_group' });
+  }
+  if (!role_id || typeof role_id !== 'string') {
+    return res.status(400).json({ error: 'invalid_role_id' });
+  }
+
+  // Verify role exists
+  const role = await knex('roles').where({ id: role_id }).select('id').first();
+  if (!role) {
+    return res.status(400).json({ error: 'role_not_found' });
+  }
+
+  try {
+    const id = await knex('group_role_map').insert({
+      idp_group: idp_group.trim(),
+      role_id,
+    });
+
+    writeAuditLog(knex, {
+      actorId: req.tokenData.user_id,
+      action: 'group_role_map.added',
+      targetType: 'group_role_map',
+      targetId: String(id[0]),
+      meta: { idp_group: idp_group.trim(), role_id },
+    });
+
+    res.json({ ok: true, id: id[0] });
+  } catch (err) {
+    if (err.message && err.message.includes('UNIQUE')) {
+      return res.status(409).json({ error: 'mapping_exists' });
+    }
+    throw err;
+  }
+}
+
+// DELETE /api/admin/group-role-map/:id — remove mapping (admin only)
+export async function handleDeleteGroupRoleMap(req, res) {
+  const mappingId = req.params.id;
+
+  if (!mappingId || !/^\d+$/.test(mappingId)) {
+    return res.status(400).json({ error: 'invalid_id' });
+  }
+
+  const mapping = await knex('group_role_map').where({ id: mappingId }).select('idp_group', 'role_id').first();
+  if (!mapping) {
+    return res.status(404).json({ error: 'mapping_not_found' });
+  }
+
+  await knex('group_role_map').where({ id: mappingId }).delete();
+
+  writeAuditLog(knex, {
+    actorId: req.tokenData.user_id,
+    action: 'group_role_map.removed',
+    targetType: 'group_role_map',
+    targetId: mappingId,
+    meta: { idp_group: mapping.idp_group, role_id: mapping.role_id },
+  });
+
+  res.json({ ok: true });
+}

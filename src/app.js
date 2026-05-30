@@ -11,7 +11,7 @@ import { handleGetComments, handlePostComment, handleResolveComment } from './ro
 import { handleDashboard } from './routes/dashboard.js';
 import { handleSessionInfo } from './routes/sessionInfo.js';
 import { handleDeleteSession, handlePatchUserRole, handleDeactivateUser, handleGetAdminActivity } from './routes/admin.js';
-import { handleArchiveSession, handlePublishSession, handleRecordViews } from './routes/dashboardActions.js';
+import { handleArchiveSession, handlePublishSession, handleRecordViews, handleGetGroupRoleMap, handleAddGroupRoleMap, handleDeleteGroupRoleMap } from './routes/dashboardActions.js';
 import { handleListTokens, handleRevokeToken } from './routes/tokens.js';
 import { handleAsset } from './routes/assets.js';
 
@@ -152,6 +152,13 @@ app.get('/api/admin/activity', requireAdmin, handleGetAdminActivity);
 app.patch('/api/sessions/:id/archive', requireAuth, handleArchiveSession);
 app.post('/api/sessions/:id/publish', requireAuth, handlePublishSession);
 app.post('/api/dashboard/views', requireAuth, handleRecordViews);
+
+// Admin group role mapping (only available for Okta)
+if (AUTH_PROVIDER === 'okta') {
+  app.get('/api/admin/group-role-map', requireAdmin, handleGetGroupRoleMap);
+  app.post('/api/admin/group-role-map', requireAdmin, handleAddGroupRoleMap);
+  app.delete('/api/admin/group-role-map/:id', requireAdmin, handleDeleteGroupRoleMap);
+}
 
 // Token management
 app.get('/api/tokens', requireAuth, handleListTokens);

@@ -41,7 +41,7 @@ export default {
   name: 'okta',
 
   // Exchange authorization code for ID token (OIDC)
-  // Returns { subject, email, email_verified, name }
+  // Returns { subject, email, email_verified, name, groups }
   async exchangeCodeForToken(code, redirectUri, codeVerifier, nonce) {
     const config = await getDiscoveredConfig();
 
@@ -67,6 +67,7 @@ export default {
       email: claims.email,
       email_verified: claims.email_verified,
       name: claims.name || claims.preferred_username,
+      groups: claims.groups || [],
     };
   },
 

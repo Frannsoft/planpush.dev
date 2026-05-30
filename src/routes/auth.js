@@ -13,6 +13,7 @@ import { setSessionCookie, clearSessionCookie, verifyRequest, signSession, verif
 import { writeAuditLog } from '../utils/audit.js';
 import { isValidDeviceCode, isValidUserCode } from '../utils/validate.js';
 import { getProvider } from '../auth/providers/index.js';
+import { reconcileRolesFromGroups } from '../utils/roleSync.js';
 
 const DEVICE_CODE_EXPIRY_MINUTES = 15;
 const ACCESS_TOKEN_EXPIRY_MINUTES = 60;
@@ -289,9 +290,10 @@ async function handleCallbackOkta(req, res) {
   const subject = claims.subject;
   const email = claims.email;
   const displayName = claims.name || claims.email;
+  const groups = claims.groups || [];
 
   // Resolve or create user via identity table
-  let userId, role, isNewUser;
+  let userId, isNewUser;
 
   const result = await knex.transaction(async (trx) => {
     const identity = await trx('user_identities')
@@ -303,7 +305,7 @@ async function handleCallbackOkta(req, res) {
       return { userId: identity.user_id, isNewUser: false };
     }
 
-    // New user: assign transitional 'developer' role (Phase 4 will add group->role mapping)
+    // New user: no roles yet; will be set by reconcile
     const newUserId = randomUUID();
     const identityId = `${newUserId}-${idp}`;
 
@@ -311,7 +313,7 @@ async function handleCallbackOkta(req, res) {
       id: newUserId,
       display_name: displayName,
       email,
-      role: 'developer',
+      role: 'member',
     });
 
     await trx('user_identities').insert({
@@ -324,13 +326,11 @@ async function handleCallbackOkta(req, res) {
     return {
       userId: newUserId,
       isNewUser: true,
-      role: 'developer',
     };
   });
 
   userId = result.userId;
   isNewUser = result.isNewUser;
-  role = result.role || 'developer';
 
   // Update existing user info
   if (!isNewUser) {
@@ -340,14 +340,31 @@ async function handleCallbackOkta(req, res) {
         display_name: displayName,
         email: email || knex.raw('email'),
       });
-    const user = await knex('users').where({ id: userId }).select('role').first();
-    role = user.role;
   }
+
+  // Reconcile roles from Okta groups (and INITIAL_ADMIN_EMAILS)
+  const userRoles = await reconcileRolesFromGroups(userId, email, groups);
+
+  // If user has no roles, deny access
+  if (userRoles.length === 0) {
+    writeAuditLog(knex, {
+      actorId: userId,
+      action: 'user.login_denied',
+      targetType: 'user',
+      targetId: userId,
+      meta: { okta_subject: subject, reason: 'no_roles_mapped' },
+    });
+    return res.status(403).set('Content-Type', 'text/html; charset=UTF-8').send(getAccessDeniedPage());
+  }
+
+  // User has roles; set session cookie
+  // Get the user's first role for legacy cookie (will migrate to RBAC-only later)
+  const userRole = await knex('users').where({ id: userId }).select('role').first();
 
   setSessionCookie(res, {
     user_id: userId,
     display_name: displayName,
-    role,
+    role: userRole.role || 'member',
   });
 
   writeAuditLog(knex, {
@@ -355,7 +372,7 @@ async function handleCallbackOkta(req, res) {
     action: 'user.login',
     targetType: 'user',
     targetId: userId,
-    meta: { okta_subject: subject, is_new: isNewUser },
+    meta: { okta_subject: subject, is_new: isNewUser, groups: groups.length },
   });
 
   if (stateData.activate) {
@@ -742,6 +759,33 @@ ${THEME_FLASH_SCRIPT}
   <div class="icon">&#10007;</div>
   <h1>Access Denied</h1>
   <p>You must be a member of the <code>${escHtml(orgName)}</code> GitHub organization to access this PlanPush instance.</p>
+</div>
+</body>
+</html>`;
+}
+
+function getAccessDeniedPage() {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlanPush — Access Not Yet Granted</title>
+${THEME_FLASH_SCRIPT}
+<style>
+  ${BASE_PAGE_CSS}
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+  .card { max-width: 400px; width: 100%; text-align: center; background: var(--pp-surface-1); border: 1px solid var(--pp-error); border-radius: var(--pp-radius-lg); padding: 36px 32px; box-shadow: var(--pp-shadow-md); }
+  .icon { width: 56px; height: 56px; border-radius: 50%; background: var(--pp-error-bg); color: var(--pp-error); display: inline-flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 20px; }
+  h1 { font-size: 20px; font-weight: 800; margin-bottom: 8px; color: var(--pp-error); letter-spacing: -0.02em; }
+  p { font-size: 14px; color: var(--pp-text-muted); line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">&#10007;</div>
+  <h1>Access Not Yet Granted</h1>
+  <p>Your Okta groups have not been mapped to any roles yet. Please contact your administrator to grant you access.</p>
 </div>
 </body>
 </html>`;
