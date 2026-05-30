@@ -8,6 +8,10 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.js'],
+      lines: 65,
+      functions: 60,
+      branches: 60,
+      statements: 65,
     },
   },
 });
