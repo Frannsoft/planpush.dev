@@ -11,6 +11,7 @@ coverage/
 # playwright e2e artifacts
 playwright-report/
 test-results/
+test/e2e/.fixtures.json
 
 # auto-pickup loop artifacts
 .claude/auto-pickup.lock
