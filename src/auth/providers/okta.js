@@ -41,7 +41,7 @@ export default {
   name: 'okta',
 
   // Exchange authorization code for ID token (OIDC)
-  // Returns { subject, email, email_verified, name, groups }
+  // Returns { subject, email, email_verified, name, groups, id_token }
   async exchangeCodeForToken(code, redirectUri, codeVerifier, nonce) {
     const config = await getDiscoveredConfig();
 
@@ -68,6 +68,7 @@ export default {
       email_verified: claims.email_verified,
       name: claims.name || claims.preferred_username,
       groups: claims.groups || [],
+      id_token: tokens.id_token,
     };
   },
 
@@ -114,5 +115,23 @@ export default {
   // Check if the provider is configured
   isConfigured() {
     return !!(process.env.OKTA_ISSUER && process.env.OKTA_CLIENT_ID && process.env.OKTA_CLIENT_SECRET);
+  },
+
+  // Build end session URL for RP-initiated logout via end_session_endpoint
+  // Returns the URL to redirect to, or null if not configured
+  async getEndSessionUrl(idToken, postLogoutRedirectUri) {
+    if (!idToken || !postLogoutRedirectUri) return null;
+
+    const config = await getDiscoveredConfig();
+    const endSessionEndpoint = config.end_session_endpoint;
+    if (!endSessionEndpoint) return null;
+
+    const params = new URLSearchParams({
+      id_token_hint: idToken,
+      post_logout_redirect_uri: postLogoutRedirectUri,
+      client_id: process.env.OKTA_CLIENT_ID,
+    });
+
+    return `${endSessionEndpoint}?${params}`;
   },
 };

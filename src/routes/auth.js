@@ -273,14 +273,16 @@ async function handleCallbackOkta(req, res) {
   const provider = getProvider('okta');
   const baseUrl = req.planpushBaseUrl;
 
-  let claims;
+  let claims, idToken;
   try {
-    claims = await provider.exchangeCodeForToken(
+    const tokenData = await provider.exchangeCodeForToken(
       code,
       `${baseUrl}/auth/callback`,
       cookieData.code_verifier,
       cookieData.nonce
     );
+    claims = tokenData;
+    idToken = tokenData.id_token;
   } catch (err) {
     console.error('[auth] Okta OIDC error:', err.message);
     return res.status(400).send('Okta OIDC failed. Please try again.');
@@ -372,6 +374,11 @@ async function handleCallbackOkta(req, res) {
     role: userRole.role || 'member',
   });
 
+  // Store id_token for RP-initiated logout (Okta end_session_endpoint)
+  if (idToken) {
+    req.session.okta_id_token = idToken;
+  }
+
   writeAuditLog(knex, {
     actorId: userId,
     action: 'user.login',
@@ -393,6 +400,30 @@ export async function handleLogout(req, res) {
   if (origin && origin !== req.planpushBaseUrl) {
     return res.status(403).json({ error: 'forbidden' });
   }
+
+  const authProvider = getAuthProvider();
+  const postLogoutRedirectUri = process.env.POST_LOGOUT_REDIRECT_URI || req.planpushBaseUrl;
+
+  // For Okta: perform RP-initiated logout via end_session_endpoint
+  if (authProvider === 'okta') {
+    const idToken = req.session?.okta_id_token;
+    if (idToken) {
+      const provider = getProvider('okta');
+      const endSessionUrl = await provider.getEndSessionUrl(idToken, postLogoutRedirectUri);
+
+      // Destroy server-side session and redirect to Okta end_session_endpoint
+      clearSessionCookie(req, () => {
+        if (endSessionUrl) {
+          return res.redirect(endSessionUrl);
+        }
+        // Fallback if end_session_endpoint not available
+        res.redirect(postLogoutRedirectUri);
+      });
+      return;
+    }
+  }
+
+  // GitHub mode or no id_token: local logout only
   clearSessionCookie(req, () => {
     res.json({ ok: true });
   });
