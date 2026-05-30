@@ -3,9 +3,7 @@ import { knex } from '../db.js';
 import { kv } from '../kv.js';
 import { can } from '../utils/rbac.js';
 
-const COOKIE_NAME = '__session';
-const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
-
+// signSession/verifySession: for OAuth CSRF state tokens only (not for session storage)
 export function signSession(payload) {
   const secret = process.env.SECRET_KEY;
   const data = Buffer.from(JSON.stringify(payload)).toString('base64url');
@@ -34,24 +32,14 @@ export function verifySession(cookie) {
   }
 }
 
-export function setSessionCookie(res, payload) {
-  const value = signSession({ ...payload, exp: Math.floor(Date.now() / 1000) + COOKIE_MAX_AGE });
-  res.cookie(COOKIE_NAME, value, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: COOKIE_MAX_AGE * 1000,
-    path: '/',
-  });
+export function setSessionCookie(req, payload) {
+  req.session.user_id = payload.user_id;
+  req.session.display_name = payload.display_name;
+  req.session.role = payload.role;
 }
 
-export function clearSessionCookie(res) {
-  res.clearCookie(COOKIE_NAME, {
-    path: '/',
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  });
+export function clearSessionCookie(req, callback) {
+  req.session.destroy(callback || (() => {}));
 }
 
 export async function verifyRequest(req) {
@@ -68,10 +56,13 @@ export async function verifyRequest(req) {
     }
   }
 
-  // Path 2: Session cookie (browser)
-  if (!tokenData) {
-    const cookie = req.cookies?.[COOKIE_NAME];
-    if (cookie) tokenData = verifySession(cookie);
+  // Path 2: Session (browser via express-session)
+  if (!tokenData && req.session?.user_id) {
+    tokenData = {
+      user_id: req.session.user_id,
+      display_name: req.session.display_name,
+      role: req.session.role,
+    };
   }
 
   if (!tokenData) return null;
