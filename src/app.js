@@ -15,9 +15,11 @@ import { handleDashboard } from './routes/dashboard.js';
 import { handleSessionInfo } from './routes/sessionInfo.js';
 import { handleDeleteSession, handlePatchUserRole, handleDeactivateUser, handleGetAdminActivity } from './routes/admin.js';
 import { handleArchiveSession, handlePublishSession, handleRecordViews, handleGetGroupRoleMap, handleAddGroupRoleMap, handleDeleteGroupRoleMap } from './routes/dashboardActions.js';
+import { handleGetSettings, handlePatchSettings, handleTestOktaConnection } from './routes/settings.js';
 import { handleListTokens, handleRevokeToken } from './routes/tokens.js';
 import { handleAsset } from './routes/assets.js';
 import { scimRouter } from './scim/index.js';
+import { requirePermission } from './utils/rbac.js';
 
 // Validate required env vars at startup
 const AUTH_PROVIDER = process.env.AUTH_PROVIDER || 'github';
@@ -176,6 +178,11 @@ app.get('/api/admin/activity', requireAdmin, handleGetAdminActivity);
 app.patch('/api/sessions/:id/archive', requireAuth, handleArchiveSession);
 app.post('/api/sessions/:id/publish', requireAuth, handlePublishSession);
 app.post('/api/dashboard/views', requireAuth, handleRecordViews);
+
+// Admin settings (admin-only, gated by user_manage permission)
+app.get('/api/admin/settings', requireAuth, requirePermission('user_manage'), handleGetSettings);
+app.patch('/api/admin/settings', requireAuth, requirePermission('user_manage'), handlePatchSettings);
+app.post('/api/admin/settings/test-connection', requireAuth, requirePermission('user_manage'), handleTestOktaConnection);
 
 // Admin group role mapping (only available for Okta)
 if (AUTH_PROVIDER === 'okta') {
