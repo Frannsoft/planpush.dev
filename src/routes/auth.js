@@ -289,6 +289,10 @@ async function handleCallbackOkta(req, res) {
   const idp = 'okta';
   const subject = claims.subject;
   const email = claims.email;
+  const emailVerified = claims.email_verified === true;
+  // Only a verified email may satisfy a privilege match (INITIAL_ADMIN_EMAILS);
+  // an unverified address must never grant roles.
+  const trustedEmail = emailVerified ? email : null;
   const displayName = claims.name || claims.email;
   const groups = claims.groups || [];
 
@@ -342,8 +346,9 @@ async function handleCallbackOkta(req, res) {
       });
   }
 
-  // Reconcile roles from Okta groups (and INITIAL_ADMIN_EMAILS)
-  const userRoles = await reconcileRolesFromGroups(userId, email, groups);
+  // Reconcile roles from Okta groups (and INITIAL_ADMIN_EMAILS).
+  // Pass the verified-only email so an unverified address cannot earn admin.
+  const userRoles = await reconcileRolesFromGroups(userId, trustedEmail, groups);
 
   // If user has no roles, deny access
   if (userRoles.length === 0) {

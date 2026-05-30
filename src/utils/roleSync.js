@@ -15,8 +15,8 @@ function parseEmailList(envStr) {
 async function computeTargetRoles(email, groups) {
   const initialAdmins = parseEmailList(process.env.INITIAL_ADMIN_EMAILS);
 
-  // Initial admin takes precedence
-  if (initialAdmins.includes(email)) {
+  // Initial admin takes precedence — only a verified (non-null) email may match
+  if (email && initialAdmins.includes(email)) {
     return ['admin'];
   }
 
