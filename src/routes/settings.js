@@ -137,6 +137,7 @@ export async function handlePatchSettings(req, res) {
       targetType: 'settings',
       targetId: null,
       meta: auditMeta,
+      requestId: req.requestId,
     });
 
     res.json({
@@ -223,6 +224,7 @@ export async function handleTestOktaConnection(req, res) {
         targetType: 'okta',
         targetId: null,
         meta: { issuer, success: true },
+        requestId: req.requestId,
       });
 
       res.json({

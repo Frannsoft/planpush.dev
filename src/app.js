@@ -7,6 +7,8 @@ import rateLimit from 'express-rate-limit';
 import { knex } from './db.js';
 import { requireAuth, requireAuthOrRedirect } from './middleware/auth.js';
 import { attachBaseUrl } from './middleware/baseUrl.js';
+import { attachRequestId } from './middleware/requestId.js';
+import { globalLogger } from './utils/logger.js';
 import { handleLogin, handleCallback, handleLogout, handleAuthDevice, handleAuthDeviceToken, handleAuthToken, handleActivateGet, handleActivatePost, handleInfo, handleSessionCheck } from './routes/auth.js';
 import { handlePush } from './routes/push.js';
 import { handleServe } from './routes/serve.js';
@@ -99,8 +101,9 @@ app.use(session({
   name: '__session',
 }));
 
-// Attach baseUrl to every request
+// Attach baseUrl and request-id to every request
 app.use(attachBaseUrl);
+app.use(attachRequestId);
 
 // Rate limiting on auth endpoints
 const authLimiter = rateLimit({
@@ -215,8 +218,17 @@ app.use((req, res) => {
 
 // Global error handler
 app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  const requestId = req.requestId || 'unknown';
+  const userId = req.session?.user?.id || null;
+  globalLogger.error('Unhandled error', {
+    error: err.message,
+    stack: err.stack,
+    requestId,
+    userId,
+    method: req.method,
+    path: req.path,
+  });
+  res.status(500).json({ error: 'Internal server error', requestId });
 });
 
 export { app };

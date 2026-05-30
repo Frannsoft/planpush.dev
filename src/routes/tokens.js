@@ -44,6 +44,7 @@ export async function handleRevokeToken(req, res) {
     targetType: 'token',
     targetId: tokenId,
     meta: { revoked_user_id: token.user_id },
+    requestId: req.requestId,
   });
 
   res.json({ ok: true, id: tokenId });

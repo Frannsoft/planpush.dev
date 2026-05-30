@@ -29,6 +29,7 @@ export async function handleDeleteSession(req, res) {
     targetType: 'session',
     targetId: sessionId,
     meta: { title: session.title },
+    requestId: req.requestId,
   });
 
   res.json({ ok: true, id: sessionId });
@@ -93,6 +94,7 @@ export async function handlePatchUserRole(req, res) {
     targetType: 'user',
     targetId,
     meta: { old_role: oldRoleId, new_role: newRoleId, github_username: user.github_username },
+    requestId: req.requestId,
   });
 
   res.json({ id: targetId, role: newRoleId });
@@ -146,6 +148,7 @@ export async function handleDeactivateUser(req, res) {
     targetType: 'user',
     targetId,
     meta: { active, github_username: user.github_username },
+    requestId: req.requestId,
   });
 
   const updated = await knex('users').where({ id: targetId }).select('deactivated_at').first();
