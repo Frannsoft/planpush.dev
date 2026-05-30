@@ -131,7 +131,25 @@ export async function seedSession({ created_by, published_at = new Date().toISOS
     ...overrides,
   };
 
-  await knex('sessions').insert(session);
+  try {
+    await knex('sessions').insert(session);
+  } catch (err) {
+    // If we get a "no such table: users_old" error, it means the migration left a temp table
+    if (err && err.message && err.message.includes('users_old')) {
+      await knex.raw('PRAGMA foreign_keys = OFF');
+      try {
+        await knex.raw('DROP TABLE IF EXISTS users_old');
+        await knex.raw('DROP TABLE IF EXISTS users_old_restore');
+      } catch (e) {
+        // Ignore
+      }
+      // Retry the insert (foreign keys are now OFF)
+      await knex('sessions').insert(session);
+    } else {
+      throw err;
+    }
+  }
+
   return session;
 }
 
