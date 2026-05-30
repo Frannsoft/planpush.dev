@@ -2,9 +2,11 @@
 // Each provider exports: { name, getUser(token), getEmail(token) }
 
 import GitHubProvider from './github.js';
+import OktaProvider from './okta.js';
 
 const providers = {
   github: GitHubProvider,
+  okta: OktaProvider,
 };
 
 export function getProvider(idp) {

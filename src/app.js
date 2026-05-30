@@ -16,14 +16,26 @@ import { handleListTokens, handleRevokeToken } from './routes/tokens.js';
 import { handleAsset } from './routes/assets.js';
 
 // Validate required env vars at startup
+const AUTH_PROVIDER = process.env.AUTH_PROVIDER || 'github';
+
 if (!process.env.SECRET_KEY || process.env.SECRET_KEY.length < 32) {
   throw new Error('SECRET_KEY must be at least 32 characters');
 }
-if (!process.env.GITHUB_CLIENT_ID) throw new Error('GITHUB_CLIENT_ID environment variable is required');
-if (!process.env.GITHUB_CLIENT_SECRET) throw new Error('GITHUB_CLIENT_SECRET environment variable is required');
-if (!process.env.GITHUB_ORG) throw new Error('GITHUB_ORG environment variable is required');
 if (process.env.NODE_ENV === 'production' && !process.env.BASE_URL) {
   throw new Error('BASE_URL environment variable is required in production (prevents Host header injection)');
+}
+
+// Validate provider-specific env vars
+if (AUTH_PROVIDER === 'github') {
+  if (!process.env.GITHUB_CLIENT_ID) throw new Error('GITHUB_CLIENT_ID environment variable is required');
+  if (!process.env.GITHUB_CLIENT_SECRET) throw new Error('GITHUB_CLIENT_SECRET environment variable is required');
+  if (!process.env.GITHUB_ORG) throw new Error('GITHUB_ORG environment variable is required');
+} else if (AUTH_PROVIDER === 'okta') {
+  if (!process.env.OKTA_ISSUER) throw new Error('OKTA_ISSUER environment variable is required');
+  if (!process.env.OKTA_CLIENT_ID) throw new Error('OKTA_CLIENT_ID environment variable is required');
+  if (!process.env.OKTA_CLIENT_SECRET) throw new Error('OKTA_CLIENT_SECRET environment variable is required');
+} else {
+  throw new Error(`Unknown AUTH_PROVIDER: ${AUTH_PROVIDER}`);
 }
 
 const app = express();
@@ -113,6 +125,8 @@ app.get('/health', (req, res) => {
 app.get('/auth/login', handleLogin);
 app.get('/auth/callback', handleCallback);
 app.post('/auth/logout', handleLogout);
+// SP-initiated login: same as /auth/login, used by IdP dashboard tiles
+app.get('/auth/initiate_login_uri', handleLogin);
 app.get('/api/auth/device', handleAuthDevice);
 app.post('/api/auth/device/token', handleAuthDeviceToken);
 app.post('/api/auth/token', handleAuthToken);
