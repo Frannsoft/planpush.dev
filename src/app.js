@@ -17,6 +17,7 @@ import { handleDeleteSession, handlePatchUserRole, handleDeactivateUser, handleG
 import { handleArchiveSession, handlePublishSession, handleRecordViews, handleGetGroupRoleMap, handleAddGroupRoleMap, handleDeleteGroupRoleMap } from './routes/dashboardActions.js';
 import { handleListTokens, handleRevokeToken } from './routes/tokens.js';
 import { handleAsset } from './routes/assets.js';
+import { scimRouter } from './scim/index.js';
 
 // Validate required env vars at startup
 const AUTH_PROVIDER = process.env.AUTH_PROVIDER || 'github';
@@ -196,6 +197,9 @@ app.get('/dashboard', requireAuthOrRedirect, handleDashboard);
 
 // Plan viewer (redirect to login if not authed)
 app.get('/p/:sessionId', requireAuthOrRedirect, handleServe);
+
+// SCIM 2.0 provisioning (separate bearer auth, not session-based)
+app.use('/scim/v2', scimRouter);
 
 // 404
 app.use((req, res) => {
