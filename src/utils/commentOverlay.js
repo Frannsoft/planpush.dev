@@ -12,13 +12,15 @@ const SIDEBAR_CSS = `
 
 #pp-sidebar-header{padding:14px 16px;border-bottom:1px solid var(--pp-border,#d0d7de);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 #pp-sidebar-header h3{font-size:15px;font-weight:700;margin:0;letter-spacing:-0.01em}
-#pp-sidebar-close{background:none;border:none;cursor:pointer;color:var(--pp-text-muted,#6b7685);font-size:20px;padding:4px 8px;border-radius:6px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+#pp-sidebar-close{background:none;border:none;cursor:pointer;color:var(--pp-text-muted,#6b7685);font-size:20px;padding:4px 8px;border-radius:6px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;transition:background .15s;outline:2px solid transparent;outline-offset:2px}
 #pp-sidebar-close:hover{background:var(--pp-surface-1,#ffffff)}
+#pp-sidebar-close:focus-visible{outline:2px solid var(--pp-accent,#0b8a4b);outline-offset:2px}
 
 #pp-anchor-filter{padding:8px 16px;background:var(--pp-surface-1,#ffffff);border-bottom:1px solid var(--pp-border,#d0d7de);font-size:12px;color:var(--pp-text-muted,#6b7685);display:none;align-items:center;gap:6px;flex-shrink:0}
 #pp-anchor-filter.pp-visible{display:flex}
 #pp-anchor-filter code{background:var(--pp-accent-soft,#e6f7ed);color:var(--pp-accent,#0b8a4b);padding:2px 6px;border-radius:4px;font-size:11px}
-#pp-anchor-filter button{background:none;border:none;cursor:pointer;color:var(--pp-text-muted,#6b7685);font-size:11px;text-decoration:underline;margin-left:auto;min-height:28px}
+#pp-anchor-filter button{background:none;border:none;cursor:pointer;color:var(--pp-text-muted,#6b7685);font-size:11px;text-decoration:underline;margin-left:auto;min-height:28px;outline:2px solid transparent;outline-offset:2px;border-radius:4px}
+#pp-anchor-filter button:focus-visible{outline:2px solid var(--pp-accent,#0b8a4b);outline-offset:2px}
 
 #pp-comments-list{flex:1;overflow-y:auto;padding:4px 0;-webkit-overflow-scrolling:touch}
 .pp-comment{padding:14px 16px;border-bottom:1px solid var(--pp-border,#d0d7de);transition:background .15s}
@@ -30,8 +32,9 @@ const SIDEBAR_CSS = `
 .pp-comment-anchor:hover{background:var(--pp-accent,#0b8a4b);color:#fff}
 .pp-comment-body{font-size:13px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
 .pp-comment-actions{margin-top:8px}
-.pp-resolve-btn{background:none;border:1px solid var(--pp-border,#d0d7de);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--pp-text-muted,#6b7685);cursor:pointer;min-height:28px;transition:all .15s}
+.pp-resolve-btn{background:none;border:1px solid var(--pp-border,#d0d7de);border-radius:6px;padding:4px 10px;font-size:11px;color:var(--pp-text-muted,#6b7685);cursor:pointer;min-height:28px;transition:all .15s;outline:2px solid transparent;outline-offset:2px}
 .pp-resolve-btn:hover{background:var(--pp-surface-1,#ffffff);color:var(--pp-text,#16171a);border-color:var(--pp-border-bold,#b8c0c8)}
+.pp-resolve-btn:focus-visible{outline:2px solid var(--pp-accent,#0b8a4b);outline-offset:2px}
 .pp-resolved-tag{font-size:11px;color:var(--pp-success,#0a8f52);font-style:italic}
 .pp-outdated-tag{display:inline-block;background:var(--pp-surface-1,#ffffff);color:var(--pp-text-muted,#6b7685);border:1px solid var(--pp-border,#d0d7de);border-radius:4px;font-size:10px;padding:1px 5px;margin-left:4px}
 .pp-comment.pp-outdated{opacity:.6}
@@ -43,10 +46,11 @@ const SIDEBAR_CSS = `
 #pp-compose textarea{width:100%;border:1px solid var(--pp-border,#d0d7de);border-radius:8px;padding:10px 12px;font-family:inherit;font-size:13px;resize:vertical;background:var(--pp-bg,#f0f1f3);color:var(--pp-text,#16171a);min-height:60px;box-sizing:border-box;transition:border-color .15s,box-shadow .15s}
 #pp-compose textarea:focus{outline:none;border-color:var(--pp-accent,#0b8a4b);box-shadow:0 0 0 3px var(--pp-accent-soft,#e6f7ed)}
 #pp-compose-actions{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
-#pp-compose button[type=submit]{background:var(--pp-accent,#0b8a4b);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;min-height:36px;transition:background .15s,transform .1s}
+#pp-compose button[type=submit]{background:var(--pp-accent,#0b8a4b);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;min-height:36px;transition:background .15s,transform .1s;outline:2px solid transparent;outline-offset:2px}
 #pp-compose button[type=submit]:hover{background:var(--pp-accent-hover,#076835)}
 #pp-compose button[type=submit]:active{transform:scale(.97)}
 #pp-compose button[type=submit]:disabled{opacity:.5;cursor:not-allowed}
+#pp-compose button[type=submit]:focus-visible{outline:2px solid light-dark(#0b8a4b,#4adf86);outline-offset:2px}
 #pp-compose-anchor{font-size:11px;color:var(--pp-text-muted,#6b7685)}
 
 [data-anchor].pp-anchor-highlight{outline:2px solid var(--pp-accent,#0b8a4b);outline-offset:2px;border-radius:4px;transition:outline-color .3s}
@@ -64,12 +68,12 @@ const SIDEBAR_HTML = `
 <div id="pp-sidebar">
   <div id="pp-sidebar-header">
     <h3>Comments</h3>
-    <button id="pp-sidebar-close" title="Close">&times;</button>
+    <button id="pp-sidebar-close" title="Close" aria-label="Close comments panel">&times;</button>
   </div>
   <label id="pp-hide-outdated-wrap"><input type="checkbox" id="pp-hide-outdated"> Hide outdated</label>
   <div id="pp-anchor-filter">
     <span>Filtered:</span> <code id="pp-anchor-name"></code>
-    <button id="pp-anchor-clear">Show all</button>
+    <button id="pp-anchor-clear" aria-label="Show all comments">Show all</button>
   </div>
   <div id="pp-comments-list"></div>
   <div id="pp-compose">
@@ -98,6 +102,7 @@ const OVERLAY_JS = `(function() {
     polling: null,
     open: false,
     submitting: false,
+    previouslyFocusedElement: null,
   };
 
   var toggle = document.getElementById('pp-comments-btn');
@@ -126,16 +131,48 @@ const OVERLAY_JS = `(function() {
   });
   closeBtn.addEventListener('click', closeSidebar);
 
+  // Escape-to-close handler
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && state.open) {
+      e.preventDefault();
+      closeSidebar();
+    }
+  });
+
+  // Focus trap handler for Tab key
+  document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Tab' || !state.open) return;
+    var focusableElements = sidebar.querySelectorAll('button, textarea, input[type="checkbox"], [tabindex]:not([tabindex="-1"])');
+    if (focusableElements.length === 0) return;
+    var firstElement = focusableElements[0];
+    var lastElement = focusableElements[focusableElements.length - 1];
+    var activeEl = document.activeElement;
+    var isInSidebar = sidebar.contains(activeEl);
+    if (!isInSidebar) return;
+    if (e.shiftKey && activeEl === firstElement) {
+      e.preventDefault();
+      lastElement.focus();
+    } else if (!e.shiftKey && activeEl === lastElement) {
+      e.preventDefault();
+      firstElement.focus();
+    }
+  });
+
   function openSidebar() {
     state.open = true;
+    state.previouslyFocusedElement = document.activeElement;
     sidebar.classList.add('pp-open');
     toggle.classList.add('pp-active');
     if (!state.polling) startPolling();
+    if (composeInput) setTimeout(function() { composeInput.focus(); }, 100);
   }
   function closeSidebar() {
     state.open = false;
     sidebar.classList.remove('pp-open');
     toggle.classList.remove('pp-active');
+    if (state.previouslyFocusedElement && typeof state.previouslyFocusedElement.focus === 'function') {
+      state.previouslyFocusedElement.focus();
+    }
   }
 
   function startPolling() {
@@ -403,13 +440,15 @@ const INFO_PANEL_CSS = `
 
 #pp-info-header{padding:14px 16px;border-bottom:1px solid var(--pp-border,#d0d7de);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 #pp-info-header h3{font-size:15px;font-weight:700;margin:0;letter-spacing:-0.01em}
-#pp-info-close{background:var(--pp-surface-1,#ffffff);border:1px solid var(--pp-border,#d0d7de);cursor:pointer;color:var(--pp-text,#16171a);font-size:18px;font-weight:700;padding:0;border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s;flex-shrink:0}
+#pp-info-close{background:var(--pp-surface-1,#ffffff);border:1px solid var(--pp-border,#d0d7de);cursor:pointer;color:var(--pp-text,#16171a);font-size:18px;font-weight:700;padding:0;border-radius:6px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s;flex-shrink:0;outline:2px solid transparent;outline-offset:2px}
 #pp-info-close:hover{background:var(--pp-border,#d0d7de);border-color:var(--pp-border-bold,#b8c0c8)}
+#pp-info-close:focus-visible{outline:2px solid var(--pp-accent,#0b8a4b);outline-offset:2px}
 
 #pp-info-tabs{display:flex;border-bottom:1px solid var(--pp-border,#d0d7de);flex-shrink:0}
-.pp-info-tab{flex:1;padding:10px 0;text-align:center;font-size:12px;font-weight:600;color:var(--pp-text-muted,#6b7685);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;min-height:40px;transition:color .15s,border-color .15s}
+.pp-info-tab{flex:1;padding:10px 0;text-align:center;font-size:12px;font-weight:600;color:var(--pp-text-muted,#6b7685);background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;min-height:40px;transition:color .15s,border-color .15s;outline:2px solid transparent;outline-offset:-4px}
 .pp-info-tab:hover{color:var(--pp-text,#16171a);background:var(--pp-surface-1,#ffffff)}
 .pp-info-tab.active{color:var(--pp-accent,#0b8a4b);border-bottom-color:var(--pp-accent,#0b8a4b)}
+.pp-info-tab:focus-visible{outline:2px solid var(--pp-accent,#0b8a4b);outline-offset:2px}
 
 .pp-info-pane{flex:1;overflow-y:auto;padding:16px;display:none}
 .pp-info-pane.active{display:block}
@@ -464,7 +503,7 @@ const INFO_PANEL_HTML = `
 <div id="pp-info-panel">
   <div id="pp-info-header">
     <h3>Plan Info</h3>
-    <button id="pp-info-close" title="Close">&times;</button>
+    <button id="pp-info-close" title="Close" aria-label="Close info panel">&times;</button>
   </div>
   <div id="pp-info-tabs">
     <button class="pp-info-tab active" data-info-tab="info">Info</button>
@@ -502,6 +541,7 @@ const INFO_PANEL_JS = `(function() {
   var panelOpen = false;
   var dataLoaded = false;
   var infoData = null;
+  var previouslyFocusedElement = null;
 
   // Show header buttons on plan pages
   var commentsBtn = document.getElementById('pp-comments-btn');
@@ -571,13 +611,44 @@ const INFO_PANEL_JS = `(function() {
 
   function openPanel() {
     panelOpen = true;
+    previouslyFocusedElement = document.activeElement;
     panel.classList.add('pp-open');
     if (!dataLoaded) loadData();
+    if (closeBtn) setTimeout(function() { closeBtn.focus(); }, 100);
   }
   function closePanel() {
     panelOpen = false;
     panel.classList.remove('pp-open');
+    if (previouslyFocusedElement && typeof previouslyFocusedElement.focus === 'function') {
+      previouslyFocusedElement.focus();
+    }
   }
+
+  // Escape-to-close and focus trap for info panel
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && panelOpen) {
+      e.preventDefault();
+      closePanel();
+    }
+  });
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Tab' || !panelOpen) return;
+    var focusableElements = panel.querySelectorAll('button, a, [tabindex]:not([tabindex="-1"])');
+    if (focusableElements.length === 0) return;
+    var firstElement = focusableElements[0];
+    var lastElement = focusableElements[focusableElements.length - 1];
+    var activeEl = document.activeElement;
+    var isInPanel = panel.contains(activeEl);
+    if (!isInPanel) return;
+    if (e.shiftKey && activeEl === firstElement) {
+      e.preventDefault();
+      lastElement.focus();
+    } else if (!e.shiftKey && activeEl === lastElement) {
+      e.preventDefault();
+      firstElement.focus();
+    }
+  });
 
   // Tab switching
   for (var i = 0; i < tabs.length; i++) {
