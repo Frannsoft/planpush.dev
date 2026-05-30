@@ -17,11 +17,23 @@ import { getProvider } from '../auth/providers/index.js';
 const DEVICE_CODE_EXPIRY_MINUTES = 15;
 const ACCESS_TOKEN_EXPIRY_MINUTES = 60;
 
+function getAuthProvider() {
+  return process.env.AUTH_PROVIDER || 'github';
+}
+
 // --- GET /auth/login ---
 export async function handleLogin(req, res) {
   const redirectTo = req.query.redirect_to || '/dashboard';
   const activate = req.query.activate || '';
+  const baseUrl = req.planpushBaseUrl;
 
+  if (getAuthProvider() === 'okta') {
+    return handleLoginOkta(req, res, redirectTo, activate, baseUrl);
+  }
+  return handleLoginGithub(req, res, redirectTo, activate, baseUrl);
+}
+
+async function handleLoginGithub(req, res, redirectTo, activate, baseUrl) {
   // CSRF nonce in state param, signed with HMAC to prevent forgery
   const nonce = randomBytes(16).toString('hex');
   const state = signSession({ redirect_to: redirectTo, activate, nonce });
@@ -35,7 +47,6 @@ export async function handleLogin(req, res) {
     path: '/',
   });
 
-  const baseUrl = req.planpushBaseUrl;
   const provider = getProvider('github');
   const config = provider.getOAuthConfig();
 
@@ -49,8 +60,37 @@ export async function handleLogin(req, res) {
   res.redirect(`https://github.com/login/oauth/authorize?${params}`);
 }
 
+async function handleLoginOkta(req, res, redirectTo, activate, baseUrl) {
+  const provider = getProvider('okta');
+  const csrfNonce = randomBytes(16).toString('hex');
+  const state = signSession({ redirect_to: redirectTo, activate, nonce: csrfNonce });
+
+  const { authorizationUrl, codeVerifier, nonce } = await provider.getAuthorizationUrl(
+    `${baseUrl}/auth/callback`,
+    state
+  );
+
+  // Store PKCE verifier + nonce in short-lived signed cookie
+  res.cookie('__oauth_state', JSON.stringify({ csrf_nonce: csrfNonce, code_verifier: codeVerifier, nonce }), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 10 * 60 * 1000,
+    path: '/',
+  });
+
+  res.redirect(authorizationUrl);
+}
+
 // --- GET /auth/callback ---
 export async function handleCallback(req, res) {
+  if (getAuthProvider() === 'okta') {
+    return handleCallbackOkta(req, res);
+  }
+  return handleCallbackGithub(req, res);
+}
+
+async function handleCallbackGithub(req, res) {
   const { code, state } = req.query;
 
   const clearOAuthState = () => res.clearCookie('__oauth_state', {
@@ -106,7 +146,6 @@ export async function handleCallback(req, res) {
   const githubUserId = String(ghUser.id);
   const githubUsername = ghUser.login;
   const displayName = ghUser.name || ghUser.login;
-  const avatarUrl = ghUser.avatar_url || '';
 
   // Check GitHub org membership
   if (config.org) {
@@ -130,11 +169,7 @@ export async function handleCallback(req, res) {
       .first();
 
     if (identity) {
-      // Existing user
-      return {
-        userId: identity.user_id,
-        isNewUser: false,
-      };
+      return { userId: identity.user_id, isNewUser: false };
     }
 
     // New user: create atomically with first-user-becomes-admin
@@ -150,7 +185,6 @@ export async function handleCallback(req, res) {
       github_user_id: githubUserId,
       github_username: githubUsername,
       display_name: displayName,
-      avatar_url: avatarUrl,
       email,
       role: newRole,
     });
@@ -180,14 +214,12 @@ export async function handleCallback(req, res) {
       .update({
         github_username: githubUsername,
         display_name: displayName,
-        avatar_url: avatarUrl,
-        email: email || knex.raw('email'), // Keep existing email if not found
+        email: email || knex.raw('email'),
       });
     const user = await knex('users').where({ id: userId }).select('role').first();
     role = user.role;
   }
 
-  // Set session cookie with provider-neutral identity
   setSessionCookie(res, {
     user_id: userId,
     display_name: displayName,
@@ -202,7 +234,130 @@ export async function handleCallback(req, res) {
     meta: { github_username: githubUsername, is_new: isNewUser },
   });
 
-  // Redirect
+  if (stateData.activate) {
+    return res.redirect('/activate');
+  }
+  res.redirect(safeRedirectUrl(stateData.redirect_to));
+}
+
+async function handleCallbackOkta(req, res) {
+  const { code, state } = req.query;
+
+  const clearOAuthState = () => res.clearCookie('__oauth_state', {
+    path: '/', httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax',
+  });
+
+  if (!code) { clearOAuthState(); return res.status(400).send('Missing authorization code'); }
+
+  // Verify state CSRF nonce
+  const stateData = verifySession(state || '');
+  if (!stateData) { clearOAuthState(); return res.status(400).send('Invalid or expired OAuth state'); }
+
+  let cookieData;
+  try {
+    cookieData = JSON.parse(req.cookies?.['__oauth_state'] || '{}');
+  } catch (e) {
+    clearOAuthState();
+    return res.status(400).send('Invalid OAuth state cookie');
+  }
+
+  if (!cookieData.csrf_nonce || cookieData.csrf_nonce !== stateData.nonce) {
+    clearOAuthState();
+    return res.status(400).send('OAuth state mismatch — possible CSRF. Please try again.');
+  }
+
+  clearOAuthState();
+
+  // Exchange code for Okta ID token
+  const provider = getProvider('okta');
+  const baseUrl = req.planpushBaseUrl;
+
+  let claims;
+  try {
+    claims = await provider.exchangeCodeForToken(
+      code,
+      `${baseUrl}/auth/callback`,
+      cookieData.code_verifier,
+      cookieData.nonce
+    );
+  } catch (err) {
+    console.error('[auth] Okta OIDC error:', err.message);
+    return res.status(400).send('Okta OIDC failed. Please try again.');
+  }
+
+  const idp = 'okta';
+  const subject = claims.subject;
+  const email = claims.email;
+  const displayName = claims.name || claims.email;
+
+  // Resolve or create user via identity table
+  let userId, role, isNewUser;
+
+  const result = await knex.transaction(async (trx) => {
+    const identity = await trx('user_identities')
+      .where({ idp, subject })
+      .select('user_id')
+      .first();
+
+    if (identity) {
+      return { userId: identity.user_id, isNewUser: false };
+    }
+
+    // New user: assign transitional 'developer' role (Phase 4 will add group->role mapping)
+    const newUserId = randomUUID();
+    const identityId = `${newUserId}-${idp}`;
+
+    await trx('users').insert({
+      id: newUserId,
+      display_name: displayName,
+      email,
+      role: 'developer',
+    });
+
+    await trx('user_identities').insert({
+      id: identityId,
+      user_id: newUserId,
+      idp,
+      subject,
+    });
+
+    return {
+      userId: newUserId,
+      isNewUser: true,
+      role: 'developer',
+    };
+  });
+
+  userId = result.userId;
+  isNewUser = result.isNewUser;
+  role = result.role || 'developer';
+
+  // Update existing user info
+  if (!isNewUser) {
+    await knex('users')
+      .where({ id: userId })
+      .update({
+        display_name: displayName,
+        email: email || knex.raw('email'),
+      });
+    const user = await knex('users').where({ id: userId }).select('role').first();
+    role = user.role;
+  }
+
+  setSessionCookie(res, {
+    user_id: userId,
+    display_name: displayName,
+    role,
+  });
+
+  writeAuditLog(knex, {
+    actorId: userId,
+    action: 'user.login',
+    targetType: 'user',
+    targetId: userId,
+    meta: { okta_subject: subject, is_new: isNewUser },
+  });
+
   if (stateData.activate) {
     return res.redirect('/activate');
   }
@@ -423,11 +578,17 @@ export async function handleActivatePost(req, res) {
 
 // --- GET /api/info ---
 export async function handleInfo(req, res) {
-  res.json({
-    auth: 'github',
+  const authProvider = getAuthProvider();
+  const info = {
+    auth: authProvider,
     version: '1.0.0',
-    org: process.env.GITHUB_ORG || null,
-  });
+  };
+
+  if (authProvider === 'github') {
+    info.org = process.env.GITHUB_ORG || null;
+  }
+
+  res.json(info);
 }
 
 // --- GET /api/auth/session ---
