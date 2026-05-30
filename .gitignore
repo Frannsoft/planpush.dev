@@ -8,6 +8,10 @@ coverage/
 *.db-wal
 *.db-shm
 
+# playwright e2e artifacts
+playwright-report/
+test-results/
+
 # auto-pickup loop artifacts
 .claude/auto-pickup.lock
 .claude/auto-pickup-stop
