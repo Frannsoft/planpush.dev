@@ -12,16 +12,10 @@ import { escHtml, safeRedirectUrl, BASE_PAGE_CSS, THEME_FLASH_SCRIPT } from '../
 import { setSessionCookie, clearSessionCookie, verifyRequest, signSession, verifySession } from '../middleware/auth.js';
 import { writeAuditLog } from '../utils/audit.js';
 import { isValidDeviceCode, isValidUserCode } from '../utils/validate.js';
+import { getProvider } from '../auth/providers/index.js';
 
 const DEVICE_CODE_EXPIRY_MINUTES = 15;
 const ACCESS_TOKEN_EXPIRY_MINUTES = 60;
-
-// Fetch with timeout to prevent hanging on unresponsive external services
-function fetchWithTimeout(url, opts = {}, timeoutMs = 10000) {
-  const ac = new AbortController();
-  const timer = setTimeout(() => ac.abort(), timeoutMs);
-  return fetch(url, { ...opts, signal: ac.signal }).finally(() => clearTimeout(timer));
-}
 
 // --- GET /auth/login ---
 export async function handleLogin(req, res) {
@@ -42,8 +36,11 @@ export async function handleLogin(req, res) {
   });
 
   const baseUrl = req.planpushBaseUrl;
+  const provider = getProvider('github');
+  const config = provider.getOAuthConfig();
+
   const params = new URLSearchParams({
-    client_id: process.env.GITHUB_CLIENT_ID,
+    client_id: config.clientId,
     redirect_uri: `${baseUrl}/auth/callback`,
     scope: 'read:org',
     state,
@@ -73,12 +70,21 @@ export async function handleCallback(req, res) {
   clearOAuthState();
 
   // Exchange code for GitHub access token
+  const provider = getProvider('github');
+  const config = provider.getOAuthConfig();
+
+  const fetchWithTimeout = (url, opts = {}, timeoutMs = 10000) => {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), timeoutMs);
+    return fetch(url, { ...opts, signal: ac.signal }).finally(() => clearTimeout(timer));
+  };
+
   const tokenResp = await fetchWithTimeout('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({
-      client_id: process.env.GITHUB_CLIENT_ID,
-      client_secret: process.env.GITHUB_CLIENT_SECRET,
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
       code,
     }),
   });
@@ -91,71 +97,99 @@ export async function handleCallback(req, res) {
 
   const ghToken = tokenData.access_token;
 
-  // Fetch GitHub user profile
-  const userResp = await fetchWithTimeout('https://api.github.com/user', {
-    headers: { Authorization: `Bearer ${ghToken}`, Accept: 'application/json', 'User-Agent': 'PlanPush' },
-  });
+  // Fetch GitHub user profile and verified email
+  const ghUser = await provider.getUser(ghToken);
+  const email = await provider.getEmail(ghToken);
 
-  if (!userResp.ok) return res.status(500).send('Failed to fetch GitHub user profile');
+  if (!ghUser || !ghUser.id) return res.status(500).send('Failed to fetch GitHub user profile');
 
-  const ghUser = await userResp.json();
   const githubUserId = String(ghUser.id);
   const githubUsername = ghUser.login;
   const displayName = ghUser.name || ghUser.login;
   const avatarUrl = ghUser.avatar_url || '';
 
   // Check GitHub org membership
-  const orgName = process.env.GITHUB_ORG;
-  if (orgName) {
-    const orgResp = await fetchWithTimeout(`https://api.github.com/orgs/${encodeURIComponent(orgName)}/members/${encodeURIComponent(githubUsername)}`, {
-      headers: { Authorization: `Bearer ${ghToken}`, Accept: 'application/json', 'User-Agent': 'PlanPush' },
-    });
-
-    // 204 = member, 302 = requester is not org member (redirect to login), 404 = not a member
-    if (orgResp.status !== 204) {
-      return res.status(403).send(getForbiddenPage(orgName));
+  if (config.org) {
+    const isMember = await provider.checkOrgMembership(githubUsername, config.org, ghToken);
+    if (!isMember) {
+      return res.status(403).send(getForbiddenPage(config.org));
     }
   }
 
-  // Upsert user in DB
-  const existingUser = await knex('users')
-    .where({ github_user_id: githubUserId })
-    .select('id', 'role')
-    .first();
+  // Resolve or create user via identity table
+  const idp = 'github';
+  const subject = githubUserId;
 
-  let userId, role;
+  let userId, role, isNewUser;
 
-  if (existingUser) {
-    userId = existingUser.id;
-    role = existingUser.role;
+  const result = await knex.transaction(async (trx) => {
+    // Look up existing identity
+    const identity = await trx('user_identities')
+      .where({ idp, subject })
+      .select('user_id')
+      .first();
+
+    if (identity) {
+      // Existing user
+      return {
+        userId: identity.user_id,
+        isNewUser: false,
+      };
+    }
+
+    // New user: create atomically with first-user-becomes-admin
+    const userCount = await trx('users').count('id as c').first();
+    const count = parseInt(userCount.c, 10);
+    const newRole = count === 0 ? 'admin' : 'member';
+
+    const newUserId = randomUUID();
+    const identityId = `${newUserId}-${idp}`;
+
+    await trx('users').insert({
+      id: newUserId,
+      github_user_id: githubUserId,
+      github_username: githubUsername,
+      display_name: displayName,
+      avatar_url: avatarUrl,
+      email,
+      role: newRole,
+    });
+
+    await trx('user_identities').insert({
+      id: identityId,
+      user_id: newUserId,
+      idp,
+      subject,
+    });
+
+    return {
+      userId: newUserId,
+      isNewUser: true,
+      role: newRole,
+    };
+  });
+
+  userId = result.userId;
+  isNewUser = result.isNewUser;
+  role = result.role || 'member';
+
+  // Update existing user info
+  if (!isNewUser) {
     await knex('users')
       .where({ id: userId })
-      .update({ github_username: githubUsername, display_name: displayName, avatar_url: avatarUrl });
-  } else {
-    // Atomic first-user-becomes-admin: transaction prevents race where two simultaneous
-    // signups both see count=0 and both get admin
-    userId = randomUUID();
-    role = await knex.transaction(async (trx) => {
-      const countRow = await trx('users').count('id as c').first();
-      const c = parseInt(countRow.c, 10);
-      const r = c === 0 ? 'admin' : 'member';
-      await trx('users').insert({
-        id: userId,
-        github_user_id: githubUserId,
+      .update({
         github_username: githubUsername,
         display_name: displayName,
         avatar_url: avatarUrl,
-        role: r,
+        email: email || knex.raw('email'), // Keep existing email if not found
       });
-      return r;
-    });
+    const user = await knex('users').where({ id: userId }).select('role').first();
+    role = user.role;
   }
 
-  // Set session cookie
+  // Set session cookie with provider-neutral identity
   setSessionCookie(res, {
     user_id: userId,
-    github_user_id: githubUserId,
-    github_username: githubUsername,
     display_name: displayName,
     role,
   });
@@ -165,7 +199,7 @@ export async function handleCallback(req, res) {
     action: 'user.login',
     targetType: 'user',
     targetId: userId,
-    meta: { github_username: githubUsername, is_new: !existingUser },
+    meta: { github_username: githubUsername, is_new: isNewUser },
   });
 
   // Redirect
@@ -232,15 +266,15 @@ export async function handleAuthDeviceToken(req, res) {
 
   if (row.status === 'authorized') {
     const user = await knex('users')
-      .where({ github_user_id: row.github_user_id })
-      .select('id', 'github_user_id', 'github_username', 'display_name', 'role')
+      .where({ id: row.user_id })
+      .select('id', 'github_username', 'display_name', 'role')
       .first();
 
     if (!user) {
       const base = req.planpushBaseUrl || process.env.BASE_URL || '';
       return res.status(400).json({
         error: 'user_not_found',
-        message: `GitHub user not found. Please sign in at ${base}/auth/login first.`,
+        message: `User not found. Please sign in at ${base}/auth/login first.`,
       });
     }
 
@@ -295,7 +329,7 @@ export async function handleAuthToken(req, res) {
       .join('users as u', 't.user_id', 'u.id')
       .where('t.hashed_token', hashed)
       .whereNull('u.deactivated_at')
-      .select('t.id', 't.user_id', 't.revoked_at', 't.family_id', 'u.github_user_id', 'u.github_username', 'u.display_name', 'u.role')
+      .select('t.id', 't.user_id', 't.revoked_at', 't.family_id', 'u.display_name', 'u.role')
       .first();
 
     if (!token) return { error: 'invalid_refresh_token' };
@@ -335,8 +369,6 @@ export async function handleAuthToken(req, res) {
     `access_token:${accessToken}`,
     JSON.stringify({
       user_id: token.user_id,
-      github_user_id: token.github_user_id,
-      github_username: token.github_username,
       display_name: token.display_name || null,
       role: token.role || 'member',
       token_id: newTokenId,
@@ -375,7 +407,7 @@ export async function handleActivatePost(req, res) {
   const updated = await knex('device_codes')
     .where({ user_code: userCode, status: 'pending' })
     .where('expires_at', '>', new Date().toISOString())
-    .update({ status: 'authorized', github_user_id: tokenData.github_user_id });
+    .update({ status: 'authorized', user_id: tokenData.user_id });
 
   if (updated === 0) {
     // Check if expired or simply not found
@@ -404,7 +436,6 @@ export async function handleSessionCheck(req, res) {
   if (!tokenData) return res.status(401).json({ error: 'not_authenticated' });
   res.json({
     user_id: tokenData.user_id,
-    github_user_id: tokenData.github_user_id,
     display_name: tokenData.display_name,
     role: tokenData.role,
   });
