@@ -116,17 +116,18 @@ export async function seedSession({ created_by, published_at = new Date().toISOS
     throw new Error('seedSession requires created_by user id');
   }
 
-  const id = `sess_${Math.random().toString(36).slice(2, 14)}`;
+  const hexPart = Math.random().toString(16).slice(2, 14).padEnd(12, '0');
+  const id = `sess_${hexPart}`;
   const session = {
     id,
     created_by,
     title: `Test Session ${id}`,
-    html_content: '<h1>Test</h1>',
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    last_updated: new Date().toISOString(),
     published_at,
     archived_at: null,
     deleted_at: null,
+    current_version: 1,
     ...overrides,
   };
 
@@ -151,10 +152,9 @@ export async function seedToken({ user_id, ...overrides } = {}) {
   const token = {
     id: tokenId,
     user_id,
-    secret_hash: hash,
-    description: 'Test token',
+    hashed_token: hash,
     revoked_at: null,
-    created_at: new Date().toISOString(),
+    issued_at: new Date().toISOString(),
     ...overrides,
   };
 
