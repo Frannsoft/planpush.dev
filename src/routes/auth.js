@@ -221,7 +221,7 @@ async function handleCallbackGithub(req, res) {
     role = user.role;
   }
 
-  setSessionCookie(res, {
+  setSessionCookie(req, {
     user_id: userId,
     display_name: displayName,
     role,
@@ -362,11 +362,11 @@ async function handleCallbackOkta(req, res) {
     return res.status(403).set('Content-Type', 'text/html; charset=UTF-8').send(getAccessDeniedPage());
   }
 
-  // User has roles; set session cookie
-  // Get the user's first role for legacy cookie (will migrate to RBAC-only later)
+  // User has roles; set session
+  // Get the user's first role for legacy session (will migrate to RBAC-only later)
   const userRole = await knex('users').where({ id: userId }).select('role').first();
 
-  setSessionCookie(res, {
+  setSessionCookie(req, {
     user_id: userId,
     display_name: displayName,
     role: userRole.role || 'member',
@@ -393,8 +393,9 @@ export async function handleLogout(req, res) {
   if (origin && origin !== req.planpushBaseUrl) {
     return res.status(403).json({ error: 'forbidden' });
   }
-  clearSessionCookie(res);
-  res.json({ ok: true });
+  clearSessionCookie(req, () => {
+    res.json({ ok: true });
+  });
 }
 
 // --- GET /api/auth/device ---
