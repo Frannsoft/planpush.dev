@@ -7,9 +7,10 @@ import {
   renderMembersSection, renderIntegrationsSection,
 } from './sections.js';
 
-export function dashboardPage(data, baseUrl, tokenData, isAdmin) {
+export function dashboardPage(data, baseUrl, tokenData, userPermissions) {
   const { sessions, members, myComments, activity, tokens, stats } = data;
   const userName = tokenData.display_name || tokenData.github_username || '';
+  const isAdmin = userPermissions && userPermissions.includes('session_view_private');
 
   const headerContent = buildHeaderHTML({
     displayName: userName,
@@ -38,9 +39,9 @@ ${THEME_FLASH_SCRIPT}
 </div>
 
 <main>
-  ${renderStatsBar(stats, isAdmin)}
-  ${renderTabBar(isAdmin, stats, myComments.length, activity.length)}
-  ${renderSessionsSection(sessions, baseUrl, isAdmin, tokenData)}
+  ${renderStatsBar(stats, userPermissions)}
+  ${renderTabBar(userPermissions, stats, myComments.length, activity.length)}
+  ${renderSessionsSection(sessions, baseUrl, userPermissions, tokenData)}
   ${renderActivityFeed(activity, baseUrl)}
   ${renderMyComments(myComments, baseUrl)}
   ${renderTokenSection(tokens)}

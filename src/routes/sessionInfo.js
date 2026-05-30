@@ -1,5 +1,6 @@
 import { knex } from '../db.js';
 import { canAccessSession } from '../utils/visibility.js';
+import { getUserPermissions } from '../utils/rbac.js';
 import { isValidSessionId } from '../utils/validate.js';
 
 // GET /api/sessions/:id/info
@@ -27,8 +28,8 @@ export async function handleSessionInfo(req, res) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 
-  const user = await knex('users').where({ id: req.tokenData.user_id }).select('role').first();
-  if (!canAccessSession(session, req.tokenData, user?.role)) {
+  const userPerms = await getUserPermissions(req.tokenData.user_id);
+  if (!canAccessSession(session, req.tokenData, userPerms)) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 

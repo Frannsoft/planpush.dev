@@ -3,6 +3,7 @@ import { kv } from '../kv.js';
 import { generateNonce } from '../utils/crypto.js';
 import { buildOverlayHTML } from '../utils/commentOverlay.js';
 import { canAccessSession } from '../utils/visibility.js';
+import { getUserPermissions } from '../utils/rbac.js';
 import { BASE_PAGE_CSS, THEME_FLASH_SCRIPT, escHtml } from '../utils/html.js';
 import { isValidSessionId } from '../utils/validate.js';
 
@@ -36,10 +37,10 @@ export async function handleServe(req, res) {
     return res.status(404).set('Content-Type', 'text/html; charset=UTF-8').send(notFoundPage());
   }
 
-  // Optimistically fetch current HTML and user role in parallel with session lookup
+  // Optimistically fetch current HTML and user permissions in parallel with session lookup
   // (for versioned requests, we'll need a second KV fetch)
   const requestedVersion = parseInt(req.query.v, 10) || 0;
-  const [session, currentHtml, userRow] = await Promise.all([
+  const [session, currentHtml, userPerms] = await Promise.all([
     knex('sessions')
       .where({ id: sessionId })
       .whereNull('deleted_at')
@@ -48,15 +49,14 @@ export async function handleServe(req, res) {
     requestedVersion > 0
       ? null // skip optimistic fetch for versioned requests
       : kv.get(`plan:${sessionId}:current`),
-    knex('users').where({ id: tokenData.user_id }).select('role').first(),
+    getUserPermissions(tokenData.user_id),
   ]);
 
   if (!session) {
     return res.status(404).set('Content-Type', 'text/html; charset=UTF-8').send(notFoundPage());
   }
 
-  const isAdmin = userRow?.role === 'admin';
-  if (!canAccessSession(session, tokenData, isAdmin ? 'admin' : 'member')) {
+  if (!canAccessSession(session, tokenData, userPerms)) {
     return res.status(404).set('Content-Type', 'text/html; charset=UTF-8').send(notFoundPage());
   }
 
@@ -80,7 +80,7 @@ export async function handleServe(req, res) {
 
   // Inject comment overlay
   const isOwner = session.created_by === tokenData.user_id;
-  const canPublish = !session.published_at && !session.archived_at && (isOwner || isAdmin);
+  const canPublish = !session.published_at && !session.archived_at && (isOwner || userPerms.includes('session_publish'));
   const overlay = buildOverlayHTML({
     sessionId,
     currentUserId: tokenData.github_user_id,

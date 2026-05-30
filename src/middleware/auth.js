@@ -1,6 +1,7 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { knex } from '../db.js';
 import { kv } from '../kv.js';
+import { can } from '../utils/rbac.js';
 
 const COOKIE_NAME = '__session';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
@@ -113,10 +114,10 @@ export async function requireAuth(req, res, next) {
 export async function requireAdmin(req, res, next) {
   const tokenData = await verifyRequest(req);
   if (!tokenData) return res.status(401).json({ error: 'unauthorized' });
-  // Always check current role from DB — token/cookie role may be stale after a role change
-  const user = await knex('users').where({ id: tokenData.user_id }).select('role').first();
-  if (!user || user.role !== 'admin') return res.status(403).json({ error: 'forbidden' });
-  tokenData.role = user.role;
+  // Check user.manage permission via RBAC (covers admin role + future granular permissions)
+  const user = { id: tokenData.user_id };
+  const hasPermission = await can(user, 'user_manage');
+  if (!hasPermission) return res.status(403).json({ error: 'forbidden' });
   req.tokenData = tokenData;
   next();
 }
