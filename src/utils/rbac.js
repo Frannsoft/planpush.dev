@@ -6,6 +6,11 @@ import { kv } from '../kv.js';
 const PERM_CACHE_TTL = 60; // seconds
 const PERM_CACHE_KEY_PREFIX = 'perms:';
 
+// Define permission scope: which permissions are ownership-scoped
+// Ownership-scoped: user must own the resource OR be admin/PM
+// Instance-wide: user with permission can act on any resource
+const OWN_SCOPED_PERMS = ['session_publish', 'session_archive'];
+
 // Resolve the effective permission set for a user from DB, cached for ~60s
 export async function getUserPermissions(userId) {
   const cacheKey = `${PERM_CACHE_KEY_PREFIX}${userId}`;
@@ -53,7 +58,8 @@ export async function invalidateUserPermCache(userId) {
 }
 
 // Check if user has a permission, with optional resource ownership check
-// `own` permissions are scoped to created_by === user.id
+// For ownership-scoped permissions: user must own the resource OR be admin/PM
+// For instance-wide permissions: having the permission is sufficient
 export async function can(user, permission, resource) {
   const perms = await getUserPermissions(user.id);
 
@@ -62,28 +68,17 @@ export async function can(user, permission, resource) {
     return false;
   }
 
-  // If resource provided, check ownership for 'own' scoped permissions
-  if (resource) {
-    // Permissions scoped to ownership (publish_own, archive_own, etc.)
-    const ownScopedPerms = ['session_publish', 'session_archive'];
-    if (ownScopedPerms.includes(permission)) {
-      // PMs and admins have the instance-wide variant; developers need ownership
-      const adminPerms = await knex('role_permissions')
-        .join('roles', 'role_permissions.role_id', 'roles.id')
-        .whereIn('roles.id', ['admin', 'project_manager'])
-        .where('permission_id', permission)
-        .count('* as c')
-        .first();
+  // If resource provided and permission is ownership-scoped, check ownership
+  if (resource && OWN_SCOPED_PERMS.includes(permission)) {
+    // Admin and PM roles bypass ownership check
+    const userRoles = await knex('user_roles')
+      .where('user_id', user.id)
+      .select('role_id')
+      .then(rows => rows.map(r => r.role_id));
 
-      // If the user's permission came from admin/PM role, ownership check passes
-      const userRoles = await knex('user_roles')
-        .where('user_id', user.id)
-        .select('role_id');
-
-      const isAdminOrPm = userRoles.some(r => ['admin', 'project_manager'].includes(r.role_id));
-      if (!isAdminOrPm && resource.created_by !== user.id) {
-        return false;
-      }
+    const isAdminOrPm = userRoles.some(r => ['admin', 'project_manager'].includes(r));
+    if (!isAdminOrPm && resource.created_by !== user.id) {
+      return false;
     }
   }
 

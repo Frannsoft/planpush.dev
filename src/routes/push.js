@@ -5,6 +5,7 @@ import { notifySlack } from '../utils/slack.js';
 import { sanitizeHtml } from '../utils/sanitize.js';
 import { writeAuditLog } from '../utils/audit.js';
 import { isValidSessionId } from '../utils/validate.js';
+import { can } from '../utils/rbac.js';
 
 const VERSION_TTL_SECONDS = 90 * 24 * 60 * 60; // 90 days
 

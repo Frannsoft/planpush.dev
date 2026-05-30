@@ -113,17 +113,6 @@ export async function requireAuth(req, res, next) {
   next();
 }
 
-export async function requireAdmin(req, res, next) {
-  const tokenData = await verifyRequest(req);
-  if (!tokenData) return res.status(401).json({ error: 'unauthorized' });
-  // Check user.manage permission via RBAC (covers admin role + future granular permissions)
-  const user = { id: tokenData.user_id };
-  const hasPermission = await can(user, 'user_manage');
-  if (!hasPermission) return res.status(403).json({ error: 'forbidden' });
-  req.tokenData = tokenData;
-  next();
-}
-
 export async function requireAuthOrRedirect(req, res, next) {
   const tokenData = await verifyRequest(req);
   if (!tokenData) {

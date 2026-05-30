@@ -5,7 +5,7 @@ import { ConnectSessionKnexStore } from 'connect-session-knex';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { knex } from './db.js';
-import { requireAuth, requireAdmin, requireAuthOrRedirect } from './middleware/auth.js';
+import { requireAuth, requireAuthOrRedirect } from './middleware/auth.js';
 import { attachBaseUrl } from './middleware/baseUrl.js';
 import { handleLogin, handleCallback, handleLogout, handleAuthDevice, handleAuthDeviceToken, handleAuthToken, handleActivateGet, handleActivatePost, handleInfo, handleSessionCheck } from './routes/auth.js';
 import { handlePush } from './routes/push.js';
@@ -169,10 +169,10 @@ app.patch('/api/comments/:id/resolve', requireAuth, commentLimiter, handleResolv
 app.get('/api/sessions/:id/info', requireAuth, handleSessionInfo);
 
 // Admin routes
-app.delete('/api/sessions/:id', requireAdmin, handleDeleteSession);
-app.patch('/api/users/:id/role', requireAdmin, handlePatchUserRole);
-app.patch('/api/users/:id/deactivate', requireAdmin, handleDeactivateUser);
-app.get('/api/admin/activity', requireAdmin, handleGetAdminActivity);
+app.delete('/api/sessions/:id', requireAuth, requirePermission('session_delete'), handleDeleteSession);
+app.patch('/api/users/:id/role', requireAuth, requirePermission('user_manage'), handlePatchUserRole);
+app.patch('/api/users/:id/deactivate', requireAuth, requirePermission('user_manage'), handleDeactivateUser);
+app.get('/api/admin/activity', requireAuth, requirePermission('audit_view'), handleGetAdminActivity);
 
 // Dashboard actions
 app.patch('/api/sessions/:id/archive', requireAuth, handleArchiveSession);
@@ -186,9 +186,9 @@ app.post('/api/admin/settings/test-connection', requireAuth, requirePermission('
 
 // Admin group role mapping (only available for Okta)
 if (AUTH_PROVIDER === 'okta') {
-  app.get('/api/admin/group-role-map', requireAdmin, handleGetGroupRoleMap);
-  app.post('/api/admin/group-role-map', requireAdmin, handleAddGroupRoleMap);
-  app.delete('/api/admin/group-role-map/:id', requireAdmin, handleDeleteGroupRoleMap);
+  app.get('/api/admin/group-role-map', requireAuth, requirePermission('group_manage'), handleGetGroupRoleMap);
+  app.post('/api/admin/group-role-map', requireAuth, requirePermission('group_manage'), handleAddGroupRoleMap);
+  app.delete('/api/admin/group-role-map/:id', requireAuth, requirePermission('group_manage'), handleDeleteGroupRoleMap);
 }
 
 // Token management

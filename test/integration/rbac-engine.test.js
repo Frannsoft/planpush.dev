@@ -37,11 +37,13 @@ describe('RBAC Engine (getUserPermissions, can, requirePermission)', () => {
       { id: 'session_publish', name: 'session_publish', description: 'Publish sessions' },
       { id: 'session_archive', name: 'session_archive', description: 'Archive sessions' },
       { id: 'user_manage', name: 'user_manage', description: 'Manage users' },
+      { id: 'session_delete', name: 'session_delete', description: 'Delete sessions' },
     ]);
     await knex('role_permissions').insert([
       { role_id: 'admin', permission_id: 'session_publish' },
       { role_id: 'admin', permission_id: 'session_archive' },
       { role_id: 'admin', permission_id: 'user_manage' },
+      { role_id: 'admin', permission_id: 'session_delete' },
       { role_id: 'project_manager', permission_id: 'session_publish' },
       { role_id: 'project_manager', permission_id: 'session_archive' },
       { role_id: 'developer', permission_id: 'session_publish' },
@@ -312,7 +314,7 @@ describe('RBAC Engine (getUserPermissions, can, requirePermission)', () => {
         role: 'admin',
       });
 
-      // The DELETE /api/sessions/:id endpoint requires 'user_manage' permission
+      // The DELETE /api/sessions/:id endpoint requires 'session_delete' permission (granted to admin)
       const session = await seedSession({ created_by: user.id });
 
       const res = await request(app)

@@ -29,21 +29,33 @@ describe('Admin Actions Integration', () => {
     await resetDb();
   });
 
+  async function setupAdminPermissions() {
+    // Seed admin role + permissions for session_delete and user_manage
+    const adminRole = await knex('roles').where({ id: 'admin' }).first();
+    if (!adminRole) {
+      await knex('roles').insert({ id: 'admin', name: 'admin', description: 'Administrator' });
+    }
+    const userManagePerm = await knex('permissions').where({ id: 'user_manage' }).first();
+    if (!userManagePerm) {
+      await knex('permissions').insert({ id: 'user_manage', name: 'user_manage', description: 'Manage users' });
+    }
+    const sessionDeletePerm = await knex('permissions').where({ id: 'session_delete' }).first();
+    if (!sessionDeletePerm) {
+      await knex('permissions').insert({ id: 'session_delete', name: 'session_delete', description: 'Delete sessions' });
+    }
+    const roleUserManagePerm = await knex('role_permissions').where({ role_id: 'admin', permission_id: 'user_manage' }).first();
+    if (!roleUserManagePerm) {
+      await knex('role_permissions').insert({ role_id: 'admin', permission_id: 'user_manage' });
+    }
+    const roleSessionDeletePerm = await knex('role_permissions').where({ role_id: 'admin', permission_id: 'session_delete' }).first();
+    if (!roleSessionDeletePerm) {
+      await knex('role_permissions').insert({ role_id: 'admin', permission_id: 'session_delete' });
+    }
+  }
+
   describe('DELETE /api/sessions/:id (soft-delete)', () => {
     it('soft-deletes a session (sets deleted_at)', async () => {
-      // Seed admin role + permission BEFORE creating admin user
-      const adminRole = await knex('roles').where({ id: 'admin' }).first();
-      if (!adminRole) {
-        await knex('roles').insert({ id: 'admin', name: 'admin', description: 'Administrator' });
-      }
-      const perm = await knex('permissions').where({ id: 'user_manage' }).first();
-      if (!perm) {
-        await knex('permissions').insert({ id: 'user_manage', name: 'user_manage', description: 'Manage users' });
-      }
-      const rolePerm = await knex('role_permissions').where({ role_id: 'admin', permission_id: 'user_manage' }).first();
-      if (!rolePerm) {
-        await knex('role_permissions').insert({ role_id: 'admin', permission_id: 'user_manage' });
-      }
+      await setupAdminPermissions();
 
       // Now create admin (seedUser will find the admin role)
       const admin = await seedUser({ role: 'admin' });
@@ -103,19 +115,7 @@ describe('Admin Actions Integration', () => {
     });
 
     it('returns 404 for non-existent session', async () => {
-      // Seed admin role + permission BEFORE creating admin user
-      const adminRole = await knex('roles').where({ id: 'admin' }).first();
-      if (!adminRole) {
-        await knex('roles').insert({ id: 'admin', name: 'admin', description: 'Administrator' });
-      }
-      const perm = await knex('permissions').where({ id: 'user_manage' }).first();
-      if (!perm) {
-        await knex('permissions').insert({ id: 'user_manage', name: 'user_manage', description: 'Manage users' });
-      }
-      const rolePerm = await knex('role_permissions').where({ role_id: 'admin', permission_id: 'user_manage' }).first();
-      if (!rolePerm) {
-        await knex('role_permissions').insert({ role_id: 'admin', permission_id: 'user_manage' });
-      }
+      await setupAdminPermissions();
 
       const admin = await seedUser({ role: 'admin' });
       const { tokenId } = await seedRefreshToken({ user_id: admin.id });
