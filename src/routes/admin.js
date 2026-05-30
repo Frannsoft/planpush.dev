@@ -1,6 +1,7 @@
 import { knex } from '../db.js';
 import { kv } from '../kv.js';
 import { writeAuditLog } from '../utils/audit.js';
+import { invalidateUserPermCache } from '../utils/rbac.js';
 import { isValidSessionId } from '../utils/validate.js';
 
 // DELETE /api/sessions/:id — soft-delete a session (admin only)
@@ -33,12 +34,14 @@ export async function handleDeleteSession(req, res) {
   res.json({ ok: true, id: sessionId });
 }
 
-// PATCH /api/users/:id/role — change a user's role (admin only)
+// PATCH /api/users/:id/role — change a user's role (user.manage permission required)
 export async function handlePatchUserRole(req, res) {
   const targetId = req.params.id;
   const { role } = req.body;
 
-  if (!role || !['admin', 'member'].includes(role)) {
+  // Support both legacy 'admin'/'member' and new role names
+  const validRoles = ['admin', 'member', 'project_manager', 'developer', 'qa'];
+  if (!role || !validRoles.includes(role)) {
     return res.status(400).json({ error: 'invalid_role' });
   }
 
@@ -46,37 +49,56 @@ export async function handlePatchUserRole(req, res) {
     return res.status(409).json({ error: 'cannot_change_own_role' });
   }
 
-  const user = await knex('users').where({ id: targetId }).select('id', 'role', 'github_username').first();
+  const user = await knex('users').where({ id: targetId }).select('id', 'github_username').first();
   if (!user) {
     return res.status(404).json({ error: 'user_not_found' });
   }
 
-  if (user.role === role) {
-    return res.json({ id: targetId, role });
+  // Normalize: legacy 'member' -> 'developer'
+  const newRoleId = role === 'member' ? 'developer' : role;
+
+  // Get current roles for the user
+  const currentRoles = await knex('user_roles').where('user_id', targetId).select('role_id');
+  const currentRoleIds = currentRoles.map(r => r.role_id);
+
+  // If user currently has the same role (as primary), no-op
+  if (currentRoleIds.includes(newRoleId) && currentRoleIds.length === 1) {
+    return res.json({ id: targetId, role: newRoleId });
   }
 
   // Prevent demoting the last admin
-  if (user.role === 'admin' && role === 'member') {
-    const adminCount = await knex('users').where({ role: 'admin' }).whereNull('deactivated_at').count('* as c').first();
+  if (newRoleId !== 'admin' && currentRoleIds.includes('admin')) {
+    const adminCount = await knex('user_roles')
+      .where('role_id', 'admin')
+      .join('users', 'user_roles.user_id', 'users.id')
+      .whereNull('users.deactivated_at')
+      .count('* as c')
+      .first();
     if (parseInt(adminCount.c, 10) <= 1) {
       return res.status(409).json({ error: 'cannot_demote_last_admin' });
     }
   }
 
-  await knex('users').where({ id: targetId }).update({ role });
+  // Replace all roles with the new single role
+  await knex('user_roles').where('user_id', targetId).delete();
+  await knex('user_roles').insert({ user_id: targetId, role_id: newRoleId });
 
+  // Invalidate user permission cache
+  await invalidateUserPermCache(targetId);
+
+  const oldRoleId = currentRoleIds[0] || 'unknown';
   writeAuditLog(knex, {
     actorId: req.tokenData.user_id,
     action: 'user.role_changed',
     targetType: 'user',
     targetId,
-    meta: { old_role: user.role, new_role: role, github_username: user.github_username },
+    meta: { old_role: oldRoleId, new_role: newRoleId, github_username: user.github_username },
   });
 
-  res.json({ id: targetId, role });
+  res.json({ id: targetId, role: newRoleId });
 }
 
-// PATCH /api/users/:id/deactivate — activate or deactivate a user (admin only)
+// PATCH /api/users/:id/deactivate — activate or deactivate a user (user.manage permission required)
 export async function handleDeactivateUser(req, res) {
   const targetId = req.params.id;
   const { active } = req.body;
@@ -89,16 +111,24 @@ export async function handleDeactivateUser(req, res) {
     return res.status(409).json({ error: 'cannot_deactivate_self' });
   }
 
-  const user = await knex('users').where({ id: targetId }).select('id', 'role', 'github_username', 'deactivated_at').first();
+  const user = await knex('users').where({ id: targetId }).select('id', 'github_username', 'deactivated_at').first();
   if (!user) {
     return res.status(404).json({ error: 'user_not_found' });
   }
 
   // Prevent deactivating the last admin
-  if (!active && user.role === 'admin') {
-    const adminCount = await knex('users').where({ role: 'admin' }).whereNull('deactivated_at').count('* as c').first();
-    if (parseInt(adminCount.c, 10) <= 1) {
-      return res.status(409).json({ error: 'cannot_deactivate_last_admin' });
+  if (!active) {
+    const userHasAdminRole = await knex('user_roles').where({ user_id: targetId, role_id: 'admin' }).first();
+    if (userHasAdminRole) {
+      const adminCount = await knex('user_roles')
+        .where('role_id', 'admin')
+        .join('users', 'user_roles.user_id', 'users.id')
+        .whereNull('users.deactivated_at')
+        .count('* as c')
+        .first();
+      if (parseInt(adminCount.c, 10) <= 1) {
+        return res.status(409).json({ error: 'cannot_deactivate_last_admin' });
+      }
     }
   }
 
@@ -107,6 +137,8 @@ export async function handleDeactivateUser(req, res) {
 
   // Clear deactivation cache so the change takes effect immediately
   await kv.delete(`deactivated:${targetId}`);
+  // Also clear permission cache in case role/permissions were cached
+  await invalidateUserPermCache(targetId);
 
   writeAuditLog(knex, {
     actorId: req.tokenData.user_id,

@@ -1,10 +1,11 @@
 import { knex } from '../db.js';
 import { writeAuditLog } from '../utils/audit.js';
 import { canAccessSession } from '../utils/visibility.js';
+import { can, getUserPermissions } from '../utils/rbac.js';
 import { recordSessionViews } from '../dashboard/queries.js';
 import { isValidSessionId } from '../utils/validate.js';
 
-// PATCH /api/sessions/:id/archive — toggle archive (owner or admin)
+// PATCH /api/sessions/:id/archive — toggle archive (owner or pm/admin with session_archive permission)
 export async function handleArchiveSession(req, res) {
   const sessionId = req.params.id;
   if (!isValidSessionId(sessionId)) {
@@ -12,10 +13,6 @@ export async function handleArchiveSession(req, res) {
   }
   const userId = req.tokenData.user_id;
   const { archived } = req.body;
-
-  // Live DB role check (cookie role can be stale after demotion)
-  const user = await knex('users').where({ id: userId }).select('role').first();
-  const isAdmin = user?.role === 'admin';
 
   if (typeof archived !== 'boolean') {
     return res.status(400).json({ error: 'invalid_body', expected: { archived: 'boolean' } });
@@ -31,7 +28,10 @@ export async function handleArchiveSession(req, res) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 
-  if (!isAdmin && session.created_by !== userId) {
+  // Check session_archive permission (enforced with ownership for developers)
+  const user = { id: userId };
+  const hasPermission = await can(user, 'session_archive', session);
+  if (!hasPermission) {
     return res.status(403).json({ error: 'forbidden' });
   }
 
@@ -49,16 +49,13 @@ export async function handleArchiveSession(req, res) {
   res.json({ ok: true, id: sessionId, archived });
 }
 
-// POST /api/sessions/:id/publish — one-way publish (owner or admin)
+// POST /api/sessions/:id/publish — one-way publish (owner or pm/admin with session_publish permission)
 export async function handlePublishSession(req, res) {
   const sessionId = req.params.id;
   if (!isValidSessionId(sessionId)) {
     return res.status(400).json({ error: 'invalid_session_id' });
   }
   const userId = req.tokenData.user_id;
-
-  const user = await knex('users').where({ id: userId }).select('role').first();
-  const isAdmin = user?.role === 'admin';
 
   const session = await knex('sessions')
     .where({ id: sessionId })
@@ -70,11 +67,15 @@ export async function handlePublishSession(req, res) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 
-  if (!canAccessSession(session, req.tokenData, isAdmin ? 'admin' : 'member')) {
+  const userPerms = await getUserPermissions(userId);
+  if (!canAccessSession(session, req.tokenData, userPerms)) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 
-  if (!isAdmin && session.created_by !== userId) {
+  // Check session_publish permission (enforced with ownership for developers)
+  const user = { id: userId };
+  const hasPermission = await can(user, 'session_publish', session);
+  if (!hasPermission) {
     return res.status(403).json({ error: 'forbidden' });
   }
 

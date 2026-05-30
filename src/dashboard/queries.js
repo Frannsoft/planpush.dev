@@ -1,12 +1,14 @@
 import { knex } from '../db.js';
+import { getUserPermissions } from '../utils/rbac.js';
 
-export async function fetchDashboardData(tokenData, isAdmin) {
+export async function fetchDashboardData(tokenData, userPermissions) {
   const userId = tokenData.user_id;
+  const isAdmin = userPermissions && userPermissions.includes('session_view_private');
 
   // --- Phase 1: parallel queries ---
   const queries = [];
 
-  // Sessions query (admin sees all, member sees own + commented-on)
+  // Sessions query (user with session_view_private sees all, others see own + commented-on published)
   if (isAdmin) {
     queries.push(
       knex('sessions as s')

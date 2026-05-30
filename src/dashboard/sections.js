@@ -21,7 +21,8 @@ function truncate(str, len) {
 }
 
 // --- Stats bar ---
-export function renderStatsBar(stats, isAdmin) {
+export function renderStatsBar(stats, userPermissions) {
+  const isAdmin = userPermissions && userPermissions.includes('session_view_private');
   return `
   <div class="stats">
     <div class="stat">
@@ -52,7 +53,8 @@ export function renderStatsBar(stats, isAdmin) {
 }
 
 // --- Tab bar ---
-export function renderTabBar(isAdmin, stats, myCommentsCount, activityCount) {
+export function renderTabBar(userPermissions, stats, myCommentsCount, activityCount) {
+  const isAdmin = userPermissions && userPermissions.includes('session_view_private');
   return `
   <nav class="tab-bar" role="tablist">
     <button class="tab-btn active" data-tab="sessions" role="tab" aria-selected="true">Sessions<span class="tab-count">${stats.sessionCount}</span></button>
@@ -65,7 +67,8 @@ export function renderTabBar(isAdmin, stats, myCommentsCount, activityCount) {
 }
 
 // --- Filter toolbar ---
-export function renderFilterToolbar(isAdmin) {
+export function renderFilterToolbar(userPermissions) {
+  const isAdmin = userPermissions && userPermissions.includes('session_view_private');
   return `
   <div class="filter-bar">
     <input type="search" id="dash-search" class="filter-input" placeholder="Search sessions..." autocomplete="off">
@@ -92,15 +95,20 @@ function buildSessionBadges(s) {
   return badges.join('');
 }
 
-function buildSessionActions(s, isAdmin) {
+function buildSessionActions(s, userPermissions) {
   const actions = [];
-  if ((s.is_mine || isAdmin) && !s.published_at) {
+  const isAdmin = userPermissions && userPermissions.includes('session_view_private');
+  const canPublish = userPermissions && userPermissions.includes('session_publish');
+  const canArchive = userPermissions && userPermissions.includes('session_archive');
+  const canDelete = userPermissions && userPermissions.includes('session_delete');
+
+  if ((s.is_mine || isAdmin) && !s.published_at && canPublish) {
     actions.push('<button class="action-btn" data-action="publish">Publish</button>');
   }
-  if (s.is_mine) {
+  if ((s.is_mine || isAdmin) && canArchive) {
     actions.push(`<button class="action-btn" data-action="archive">${s.archived_at ? 'Unarchive' : 'Archive'}</button>`);
   }
-  if (isAdmin) {
+  if (canDelete) {
     actions.push('<button class="action-btn action-btn-danger" data-action="delete">Delete</button>');
   }
   return actions.join(' ');
@@ -122,7 +130,9 @@ function sessionDataAttrs(s) {
 }
 
 // --- Sessions table ---
-export function renderSessionsSection(sessions, baseUrl, isAdmin, tokenData) {
+export function renderSessionsSection(sessions, baseUrl, userPermissions, tokenData) {
+  const isAdmin = userPermissions && userPermissions.includes('session_view_private');
+  const canDelete = userPermissions && userPermissions.includes('session_delete');
   const rows = sessions.map(s => `
     <tr${s.archived_at ? ' class="row-archived"' : ''}
       ${sessionDataAttrs(s)}>
@@ -137,11 +147,11 @@ export function renderSessionsSection(sessions, baseUrl, isAdmin, tokenData) {
         : '<span class="muted">0</span>'
       }</td>
       <td class="muted">${s.comment_count}</td>
-      <td class="actions-cell">${buildSessionActions(s, isAdmin)}</td>
+      <td class="actions-cell">${buildSessionActions(s, userPermissions)}</td>
     </tr>`).join('');
 
   const cards = sessions.map(s => {
-    const actionsHtml = buildSessionActions(s, isAdmin);
+    const actionsHtml = buildSessionActions(s, userPermissions);
     return `
     <div class="session-card${s.archived_at ? ' row-archived' : ''}"
       ${sessionDataAttrs(s)}>
@@ -165,7 +175,7 @@ export function renderSessionsSection(sessions, baseUrl, isAdmin, tokenData) {
 
   return `
   <div class="tab-section active" data-section="sessions">
-    ${renderFilterToolbar(isAdmin)}
+    ${renderFilterToolbar(userPermissions)}
     ${sessions.length > 0 ? `
     <table class="desktop-table" id="sessions-table">
       <thead>

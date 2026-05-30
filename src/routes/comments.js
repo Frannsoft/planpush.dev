@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { knex } from '../db.js';
 import { notifySlack } from '../utils/slack.js';
 import { canAccessSession } from '../utils/visibility.js';
+import { getUserPermissions } from '../utils/rbac.js';
 import { isValidSessionId } from '../utils/validate.js';
 
 // GET /api/comments?session_id={sessionId}
@@ -23,8 +24,8 @@ export async function handleGetComments(req, res) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 
-  const user = await knex('users').where({ id: tokenData.user_id }).select('role').first();
-  if (!canAccessSession(session, tokenData, user?.role)) {
+  const userPerms = await getUserPermissions(tokenData.user_id);
+  if (!canAccessSession(session, tokenData, userPerms)) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 
@@ -73,8 +74,8 @@ export async function handlePostComment(req, res) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 
-  const user = await knex('users').where({ id: tokenData.user_id }).select('role').first();
-  if (!canAccessSession(session, tokenData, user?.role)) {
+  const userPerms = await getUserPermissions(tokenData.user_id);
+  if (!canAccessSession(session, tokenData, userPerms)) {
     return res.status(404).json({ error: 'session_not_found' });
   }
 
@@ -137,8 +138,8 @@ export async function handleResolveComment(req, res) {
     return res.status(404).json({ error: 'comment_not_found' });
   }
 
-  const user = await knex('users').where({ id: tokenData.user_id }).select('role').first();
-  if (!canAccessSession(comment, tokenData, user?.role)) {
+  const userPerms = await getUserPermissions(tokenData.user_id);
+  if (!canAccessSession(comment, tokenData, userPerms)) {
     return res.status(404).json({ error: 'comment_not_found' });
   }
 
