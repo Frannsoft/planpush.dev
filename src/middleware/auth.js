@@ -75,9 +75,9 @@ export async function verifyRequest(req) {
 
   if (!tokenData) return null;
 
-  // Note: org membership is not re-verified after login. If a user is removed from
-  // the GitHub org, their session/tokens remain valid until expiry or admin deactivation.
-  // Operators should deactivate users in PlanPush when removing them from the org.
+  // Note: IdP membership is not re-verified after login. If a user is removed from
+  // their IdP (GitHub org, Okta group, etc.), their session/tokens remain valid until
+  // expiry or admin deactivation. Operators should deactivate users in PlanPush when needed.
 
   // Check if the underlying refresh token has been revoked (access tokens only)
   if (tokenId) {
