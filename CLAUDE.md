@@ -44,6 +44,8 @@ Server runs on port 3000. Requires `.env` (see `.env.example`).
 - KV store is database-backed (`kv_store` table), not filesystem
 - Migrations: JS files in `src/migrations/`, auto-run at startup via `knex.migrate.latest()`
 - Routes import `knex` directly from `db.js` — no `app.locals` indirection
+- **Detect Postgres via `['pg','postgres','postgresql'].includes(knex.client.config.client)`** — `db.js` sets the client to `'pg'`, so a `=== 'postgres'` check is always false on Postgres (this caused migration 007 to run its SQLite table-rebuild path on Render and fail)
+- **When you add or change a migration, run `npm run test:migrations:pg`** — it applies the full chain up → rollback-all → up against a real throwaway Postgres (testcontainers/Docker, or `PG_TEST_URL`). The default `npm test` only covers SQLite, which silently tolerates Postgres-only failures (FK-dependency drops, `ALTER`-vs-rebuild). Auto-skips if Docker isn't running, so it never blocks the SQLite suite.
 
 ## Security
 
