@@ -1,0 +1,292 @@
+
+> planpush@0.0.1 test:coverage
+> vitest run --coverage
+
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mC:/Users/Jordan/wkspaces/planpush.dev/.claude/worktrees/jaz-353-coverage[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m test/unit/slack.test.js [2m([22m[2m19 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m test/unit/sanitize.test.js [2m([22m[2m30 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+[90mstdout[2m | test/integration/role-sync.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/admin.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/dashboard-actions.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/visibility-routes.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/auth-token-rotation.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/dashboard-integration.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/push.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/comments.test.js
+[22m[39m[db] migrations up to date
+
+ [32m✓[39m test/unit/crypto.test.js [2m([22m[2m42 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+[90mstdout[2m | test/integration/rbac-engine.test.js
+[22m[39m[db] migrations up to date
+
+ [32m✓[39m test/unit/visibility.test.js [2m([22m[2m17 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m test/unit/html.test.js [2m([22m[2m32 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m test/unit/validate.test.js [2m([22m[2m21 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+[90mstdout[2m | test/integration/auth-device.test.js
+[22m[39m[db] migrations up to date
+
+ [31m❯[39m test/integration/rbac-engine.test.js [2m([22m[2m18 tests[22m[2m | [22m[31m7 failed[39m[2m)[22m[33m 1268[2mms[22m[39m
+   [32m✓[39m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mgetUserPermissions[2m > [22mreturns permission ids for user with roles[32m 17[2mms[22m[39m
+   [32m✓[39m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mgetUserPermissions[2m > [22mreturns empty array for user with no roles[32m 9[2mms[22m[39m
+   [32m✓[39m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mgetUserPermissions[2m > [22mreturns union of all role permissions[32m 11[2mms[22m[39m
+   [32m✓[39m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mgetUserPermissions[2m > [22mcaches permissions for 60s[32m 6[2mms[22m[39m
+   [32m✓[39m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mgetUserPermissions[2m > [22mreturns fresh permissions after cache invalidation[32m 7[2mms[22m[39m
+   [32m✓[39m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - baseline permission check[2m > [22mreturns true when user has permission[32m 5[2mms[22m[39m
+   [32m✓[39m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - baseline permission check[2m > [22mreturns false when user lacks permission[32m 4[2mms[22m[39m
+   [32m✓[39m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - baseline permission check[2m > [22mreturns false when user has no roles[32m 5[2mms[22m[39m
+[31m   [31m×[31m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - ownership-scoped permissions[2m > [22mallows owner to session_publish their own session[39m[32m 16[2mms[22m[39m
+[31m     → insert into `sessions` (`archived_at`, `created_at`, `created_by`, `current_version`, `deleted_at`, `id`, `last_updated`, `published_at`, `title`) values (NULL, '2026-05-30T14:03:35.272Z', 'user_f1px0p7w', 1, NULL, 'sess_188b08453c1d', '2026-05-30T14:03:35.272Z', '2026-05-30T14:03:35.272Z', 'Test Session sess_188b08453c1d') - no such table: main.users_old[39m
+[31m   [31m×[31m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - ownership-scoped permissions[2m > [22mdenies developer from session_publish another user's session[39m[32m 4[2mms[22m[39m
+[31m     → insert into `sessions` (`archived_at`, `created_at`, `created_by`, `current_version`, `deleted_at`, `id`, `last_updated`, `published_at`, `title`) values (NULL, '2026-05-30T14:03:35.288Z', 'user_cifobc8p', 1, NULL, 'sess_3204b49d9f70', '2026-05-30T14:03:35.288Z', '2026-05-30T14:03:35.288Z', 'Test Session sess_3204b49d9f70') - no such table: main.users_old[39m
+[31m   [31m×[31m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - ownership-scoped permissions[2m > [22mallows admin to session_publish any session (bypasses ownership check)[39m[32m 4[2mms[22m[39m
+[31m     → insert into `sessions` (`archived_at`, `created_at`, `created_by`, `current_version`, `deleted_at`, `id`, `last_updated`, `published_at`, `title`) values (NULL, '2026-05-30T14:03:35.293Z', 'user_fybhimf0', 1, NULL, 'sess_dc51027c9b9c', '2026-05-30T14:03:35.293Z', '2026-05-30T14:03:35.293Z', 'Test Session sess_dc51027c9b9c') - no such table: main.users_old[39m
+[31m   [31m×[31m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - ownership-scoped permissions[2m > [22mallows PM to session_archive any session (bypasses ownership check)[39m[32m 4[2mms[22m[39m
+[31m     → insert into `sessions` (`archived_at`, `created_at`, `created_by`, `current_version`, `deleted_at`, `id`, `last_updated`, `published_at`, `title`) values (NULL, '2026-05-30T14:03:35.297Z', 'user_qf76m0r0', 1, NULL, 'sess_69d483a6f1b7', '2026-05-30T14:03:35.297Z', '2026-05-30T14:03:35.297Z', 'Test Session sess_69d483a6f1b7') - no such table: main.users_old[39m
+[31m   [31m×[31m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - ownership-scoped permissions[2m > [22mdenies developer session_archive on another user's session[39m[32m 4[2mms[22m[39m
+[31m     → insert into `sessions` (`archived_at`, `created_at`, `created_by`, `current_version`, `deleted_at`, `id`, `last_updated`, `published_at`, `title`) values (NULL, '2026-05-30T14:03:35.301Z', 'user_n2xn5u3a', 1, NULL, 'sess_5b0b5059c7e1', '2026-05-30T14:03:35.301Z', '2026-05-30T14:03:35.301Z', 'Test Session sess_5b0b5059c7e1') - no such table: main.users_old[39m
+[31m   [31m×[31m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - ownership-scoped permissions[2m > [22mallows owner session_archive on own session even without admin role[39m[32m 7[2mms[22m[39m
+[31m     → insert into `sessions` (`archived_at`, `created_at`, `created_by`, `current_version`, `deleted_at`, `id`, `last_updated`, `published_at`, `title`) values (NULL, '2026-05-30T14:03:35.308Z', 'user_249u36aw', 1, NULL, 'sess_c896c0c37fb2', '2026-05-30T14:03:35.308Z', '2026-05-30T14:03:35.308Z', 'Test Session sess_c896c0c37fb2') - no such table: main.users_old[39m
+   [32m✓[39m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mrequirePermission middleware[2m > [22mreturns 401 when no tokenData is present[32m 5[2mms[22m[39m
+[31m   [31m×[31m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mrequirePermission middleware[2m > [22mreturns 403 when user is deactivated[39m[32m 120[2mms[22m[39m
+[31m     → expected 400 "Bad Request", got 401 "Unauthorized"[39m
+   [32m✓[39m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mrequirePermission middleware[2m > [22mreturns 403 when user lacks permission[32m 8[2mms[22m[39m
+   [32m✓[39m RBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mrequirePermission middleware[2m > [22mcalls next() on success[32m 19[2mms[22m[39m
+ [32m✓[39m test/integration/dashboard-integration.test.js [2m([22m[2m10 tests[22m[2m)[22m[33m 1374[2mms[22m[39m
+ [32m✓[39m test/integration/comments.test.js [2m([22m[2m18 tests[22m[2m)[22m[33m 1482[2mms[22m[39m
+ [31m❯[39m test/integration/dashboard-actions.test.js [2m([22m[2m21 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 1536[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPATCH /api/sessions/:id/archive[2m > [22mallows owner (developer) to archive own session[32m 101[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPATCH /api/sessions/:id/archive[2m > [22mallows owner to unarchive session[32m 24[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPATCH /api/sessions/:id/archive[2m > [22mallows PM (admin-like) to archive any session[32m 56[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPATCH /api/sessions/:id/archive[2m > [22mdenies developer from archiving another user's session[32m 18[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPATCH /api/sessions/:id/archive[2m > [22mreturns 404 for non-existent session[32m 13[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPATCH /api/sessions/:id/archive[2m > [22mreturns 400 for invalid session id[32m 13[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPATCH /api/sessions/:id/archive[2m > [22mreturns 400 when archived is not a boolean[32m 20[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPATCH /api/sessions/:id/archive[2m > [22mreturns 400 when archived is missing from body[32m 14[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/sessions/:id/publish[2m > [22mallows owner to publish own session[32m 20[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/sessions/:id/publish[2m > [22mis idempotent - re-publishing already-published session succeeds[32m 22[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/sessions/:id/publish[2m > [22mallows PM to publish any session[32m 20[2mms[22m[39m
+[31m   [31m×[31m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/sessions/:id/publish[2m > [22mdenies developer from publishing another user's session[39m[32m 17[2mms[22m[39m
+[31m     → expected 403 "Forbidden", got 404 "Not Found"[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/sessions/:id/publish[2m > [22mreturns 404 for non-existent session[32m 12[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/sessions/:id/publish[2m > [22mreturns 400 for invalid session id[32m 22[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/sessions/:id/publish[2m > [22mreturns 404 when trying to publish private session as non-owner[32m 13[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/dashboard/views[2m > [22mrecords session views for valid session ids[32m 17[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/dashboard/views[2m > [22msilently ignores invalid session ids (non-fatal FK violation)[32m 17[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/dashboard/views[2m > [22mreturns 400 when session_ids is missing[32m 12[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/dashboard/views[2m > [22mreturns 400 when session_ids is not an array[32m 11[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/dashboard/views[2m > [22mreturns 400 when session_ids array is empty[32m 12[2mms[22m[39m
+   [32m✓[39m Dashboard Actions (PATCH/POST)[2m > [22mPOST /api/dashboard/views[2m > [22mreturns 400 when all session_ids are invalid format[32m 11[2mms[22m[39m
+ [32m✓[39m test/integration/auth-token-rotation.test.js [2m([22m[2m13 tests[22m[2m)[22m[33m 1585[2mms[22m[39m
+ [32m✓[39m test/integration/admin.test.js [2m([22m[2m21 tests[22m[2m)[22m[33m 1740[2mms[22m[39m
+ [32m✓[39m test/integration/push.test.js [2m([22m[2m15 tests[22m[2m)[22m[33m 1635[2mms[22m[39m
+ [32m✓[39m test/integration/visibility-routes.test.js [2m([22m[2m15 tests[22m[2m)[22m[33m 1719[2mms[22m[39m
+[90mstdout[2m | test/integration/auth-session.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/token-revoke-rbac.test.js
+[22m[39m[db] migrations up to date
+
+ [32m✓[39m test/integration/auth-device.test.js [2m([22m[2m12 tests[22m[2m)[22m[33m 1018[2mms[22m[39m
+[90mstdout[2m | test/integration/health.test.js
+[22m[39m[db] migrations up to date
+
+ [32m✓[39m test/integration/auth-session.test.js [2m([22m[2m11 tests[22m[2m)[22m[33m 561[2mms[22m[39m
+ [32m✓[39m test/integration/token-revoke-rbac.test.js [2m([22m[2m3 tests[22m[2m)[22m[33m 504[2mms[22m[39m
+ [32m✓[39m test/integration/health.test.js [2m([22m[2m1 test[22m[2m)[22m[33m 455[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m test/integration/role-sync.test.js[2m [ test/integration/role-sync.test.js ][22m
+[31m[1mReferenceError[22m: afterEach is not defined[39m
+[36m [2m❯[22m test/integration/role-sync.test.js:[2m51:3[22m[39m
+    [90m 49| [39m  })[33m;[39m
+    [90m 50| [39m
+    [90m 51| [39m  [34mafterEach[39m([35masync[39m () [33m=>[39m {
+    [90m   | [39m  [31m^[39m
+    [90m 52| [39m    [90m// Restore INITIAL_ADMIN_EMAILS[39m
+    [90m 53| [39m    process[33m.[39menv[33m.[39m[33mINITIAL_ADMIN_EMAILS[39m [33m=[39m [35mthis[39m[33m.[39moriginalAdminEmails[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯[22m[39m
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 8 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m test/integration/dashboard-actions.test.js[2m > [22mDashboard Actions (PATCH/POST)[2m > [22mPOST /api/sessions/:id/publish[2m > [22mdenies developer from publishing another user's session
+[31m[1mError[22m: expected 403 "Forbidden", got 404 "Not Found"[39m
+[36m [2m❯[22m test/integration/dashboard-actions.test.js:[2m328:10[22m[39m
+    [90m326| [39m        [33m.[39m[34mpost[39m([32m`/api/sessions/[39m[36m${[39msession[33m.[39mid[36m}[39m[32m/publish`[39m)
+    [90m327| [39m        [33m.[39m[35mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer [39m[36m${[39maccessToken[36m}[39m[32m`[39m)
+    [90m328| [39m        [33m.[39m[34mexpect[39m([34m403[39m)[33m;[39m
+    [90m   | [39m         [31m^[39m
+    [90m329| [39m
+    [90m330| [39m      [34mexpect[39m(res[33m.[39mbody[33m.[39merror)[33m.[39m[34mtoBe[39m([32m'forbidden'[39m)[33m;[39m
+[90m [2m❯[22m Test._assertStatus ../../../node_modules/supertest/lib/test.js:[2m309:14[22m[39m
+[90m [2m❯[22m ../../../node_modules/supertest/lib/test.js:[2m365:13[22m[39m
+[90m [2m❯[22m Test._assertFunction ../../../node_modules/supertest/lib/test.js:[2m342:13[22m[39m
+[90m [2m❯[22m Test.assert ../../../node_modules/supertest/lib/test.js:[2m195:23[22m[39m
+[90m [2m❯[22m localAssert ../../../node_modules/supertest/lib/test.js:[2m138:14[22m[39m
+[90m [2m❯[22m Server.<anonymous> ../../../node_modules/supertest/lib/test.js:[2m152:11[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/integration/rbac-engine.test.js[2m > [22mRBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - ownership-scoped permissions[2m > [22mallows owner to session_publish their own session
+[31m[1mSqliteError[22m: insert into `sessions` (`archived_at`, `created_at`, `created_by`, `current_version`, `deleted_at`, `id`, `last_updated`, `published_at`, `title`) values (NULL, '2026-05-30T14:03:35.272Z', 'user_f1px0p7w', 1, NULL, 'sess_188b08453c1d', '2026-05-30T14:03:35.272Z', '2026-05-30T14:03:35.272Z', 'Test Session sess_188b08453c1d') - no such table: main.users_old[39m
+[90m [2m❯[22m Database.prepare ../../../node_modules/better-sqlite3/lib/methods/wrappers.js:[2m5:21[22m[39m
+[90m [2m❯[22m Client_BetterSQLite3._query ../../../node_modules/knex/lib/dialects/better-sqlite3/index.js:[2m42:34[22m[39m
+[90m [2m❯[22m executeQuery ../../../node_modules/knex/lib/execution/internal/query-executioner.js:[2m37:17[22m[39m
+[90m [2m❯[22m Client_BetterSQLite3.query ../../../node_modules/knex/lib/client.js:[2m157:12[22m[39m
+[90m [2m❯[22m Runner.query ../../../node_modules/knex/lib/execution/runner.js:[2m141:36[22m[39m
+[90m [2m❯[22m ensureConnectionCallback ../../../node_modules/knex/lib/execution/internal/ensure-connection-callback.js:[2m13:17[22m[39m
+[90m [2m❯[22m Runner.ensureConnection ../../../node_modules/knex/lib/execution/runner.js:[2m318:20[22m[39m
+[90m [2m❯[22m Runner.run ../../../node_modules/knex/lib/execution/runner.js:[2m30:19[22m[39m
+[36m [2m❯[22m seedSession test/helpers/db.js:[2m134:3[22m[39m
+    [90m132| [39m  }[33m;[39m
+    [90m133| [39m
+    [90m134| [39m  [35mawait[39m [34mknex[39m([32m'sessions'[39m)[33m.[39m[34minsert[39m(session)[33m;[39m
+    [90m   | [39m  [31m^[39m
+    [90m135| [39m  [35mreturn[39m session[33m;[39m
+    [90m136| [39m}
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/integration/rbac-engine.test.js[2m > [22mRBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - ownership-scoped permissions[2m > [22mdenies developer from session_publish another user's session
+[31m[1mSqliteError[22m: insert into `sessions` (`archived_at`, `created_at`, `created_by`, `current_version`, `deleted_at`, `id`, `last_updated`, `published_at`, `title`) values (NULL, '2026-05-30T14:03:35.288Z', 'user_cifobc8p', 1, NULL, 'sess_3204b49d9f70', '2026-05-30T14:03:35.288Z', '2026-05-30T14:03:35.288Z', 'Test Session sess_3204b49d9f70') - no such table: main.users_old[39m
+[90m [2m❯[22m Database.prepare ../../../node_modules/better-sqlite3/lib/methods/wrappers.js:[2m5:21[22m[39m
+[90m [2m❯[22m Client_BetterSQLite3._query ../../../node_modules/knex/lib/dialects/better-sqlite3/index.js:[2m42:34[22m[39m
+[90m [2m❯[22m executeQuery ../../../node_modules/knex/lib/execution/internal/query-executioner.js:[2m37:17[22m[39m
+[90m [2m❯[22m Client_BetterSQLite3.query ../../../node_modules/knex/lib/client.js:[2m157:12[22m[39m
+[90m [2m❯[22m Runner.query ../../../node_modules/knex/lib/execution/runner.js:[2m141:36[22m[39m
+[90m [2m❯[22m ensureConnectionCallback ../../../node_modules/knex/lib/execution/internal/ensure-connection-callback.js:[2m13:17[22m[39m
+[90m [2m❯[22m Runner.ensureConnection ../../../node_modules/knex/lib/execution/runner.js:[2m318:20[22m[39m
+[90m [2m❯[22m Runner.run ../../../node_modules/knex/lib/execution/runner.js:[2m30:19[22m[39m
+[36m [2m❯[22m seedSession test/helpers/db.js:[2m134:3[22m[39m
+    [90m132| [39m  }[33m;[39m
+    [90m133| [39m
+    [90m134| [39m  [35mawait[39m [34mknex[39m([32m'sessions'[39m)[33m.[39m[34minsert[39m(session)[33m;[39m
+    [90m   | [39m  [31m^[39m
+    [90m135| [39m  [35mreturn[39m session[33m;[39m
+    [90m136| [39m}
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/integration/rbac-engine.test.js[2m > [22mRBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - ownership-scoped permissions[2m > [22mallows admin to session_publish any session (bypasses ownership check)
+[31m[1mSqliteError[22m: insert into `sessions` (`archived_at`, `created_at`, `created_by`, `current_version`, `deleted_at`, `id`, `last_updated`, `published_at`, `title`) values (NULL, '2026-05-30T14:03:35.293Z', 'user_fybhimf0', 1, NULL, 'sess_dc51027c9b9c', '2026-05-30T14:03:35.293Z', '2026-05-30T14:03:35.293Z', 'Test Session sess_dc51027c9b9c') - no such table: main.users_old[39m
+[90m [2m❯[22m Database.prepare ../../../node_modules/better-sqlite3/lib/methods/wrappers.js:[2m5:21[22m[39m
+[90m [2m❯[22m Client_BetterSQLite3._query ../../../node_modules/knex/lib/dialects/better-sqlite3/index.js:[2m42:34[22m[39m
+[90m [2m❯[22m executeQuery ../../../node_modules/knex/lib/execution/internal/query-executioner.js:[2m37:17[22m[39m
+[90m [2m❯[22m Client_BetterSQLite3.query ../../../node_modules/knex/lib/client.js:[2m157:12[22m[39m
+[90m [2m❯[22m Runner.query ../../../node_modules/knex/lib/execution/runner.js:[2m141:36[22m[39m
+[90m [2m❯[22m ensureConnectionCallback ../../../node_modules/knex/lib/execution/internal/ensure-connection-callback.js:[2m13:17[22m[39m
+[90m [2m❯[22m Runner.ensureConnection ../../../node_modules/knex/lib/execution/runner.js:[2m318:20[22m[39m
+[90m [2m❯[22m Runner.run ../../../node_modules/knex/lib/execution/runner.js:[2m30:19[22m[39m
+[36m [2m❯[22m seedSession test/helpers/db.js:[2m134:3[22m[39m
+    [90m132| [39m  }[33m;[39m
+    [90m133| [39m
+    [90m134| [39m  [35mawait[39m [34mknex[39m([32m'sessions'[39m)[33m.[39m[34minsert[39m(session)[33m;[39m
+    [90m   | [39m  [31m^[39m
+    [90m135| [39m  [35mreturn[39m session[33m;[39m
+    [90m136| [39m}
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/integration/rbac-engine.test.js[2m > [22mRBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - ownership-scoped permissions[2m > [22mallows PM to session_archive any session (bypasses ownership check)
+[31m[1mSqliteError[22m: insert into `sessions` (`archived_at`, `created_at`, `created_by`, `current_version`, `deleted_at`, `id`, `last_updated`, `published_at`, `title`) values (NULL, '2026-05-30T14:03:35.297Z', 'user_qf76m0r0', 1, NULL, 'sess_69d483a6f1b7', '2026-05-30T14:03:35.297Z', '2026-05-30T14:03:35.297Z', 'Test Session sess_69d483a6f1b7') - no such table: main.users_old[39m
+[90m [2m❯[22m Database.prepare ../../../node_modules/better-sqlite3/lib/methods/wrappers.js:[2m5:21[22m[39m
+[90m [2m❯[22m Client_BetterSQLite3._query ../../../node_modules/knex/lib/dialects/better-sqlite3/index.js:[2m42:34[22m[39m
+[90m [2m❯[22m executeQuery ../../../node_modules/knex/lib/execution/internal/query-executioner.js:[2m37:17[22m[39m
+[90m [2m❯[22m Client_BetterSQLite3.query ../../../node_modules/knex/lib/client.js:[2m157:12[22m[39m
+[90m [2m❯[22m Runner.query ../../../node_modules/knex/lib/execution/runner.js:[2m141:36[22m[39m
+[90m [2m❯[22m ensureConnectionCallback ../../../node_modules/knex/lib/execution/internal/ensure-connection-callback.js:[2m13:17[22m[39m
+[90m [2m❯[22m Runner.ensureConnection ../../../node_modules/knex/lib/execution/runner.js:[2m318:20[22m[39m
+[90m [2m❯[22m Runner.run ../../../node_modules/knex/lib/execution/runner.js:[2m30:19[22m[39m
+[36m [2m❯[22m seedSession test/helpers/db.js:[2m134:3[22m[39m
+    [90m132| [39m  }[33m;[39m
+    [90m133| [39m
+    [90m134| [39m  [35mawait[39m [34mknex[39m([32m'sessions'[39m)[33m.[39m[34minsert[39m(session)[33m;[39m
+    [90m   | [39m  [31m^[39m
+    [90m135| [39m  [35mreturn[39m session[33m;[39m
+    [90m136| [39m}
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/integration/rbac-engine.test.js[2m > [22mRBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - ownership-scoped permissions[2m > [22mdenies developer session_archive on another user's session
+[31m[1mSqliteError[22m: insert into `sessions` (`archived_at`, `created_at`, `created_by`, `current_version`, `deleted_at`, `id`, `last_updated`, `published_at`, `title`) values (NULL, '2026-05-30T14:03:35.301Z', 'user_n2xn5u3a', 1, NULL, 'sess_5b0b5059c7e1', '2026-05-30T14:03:35.301Z', '2026-05-30T14:03:35.301Z', 'Test Session sess_5b0b5059c7e1') - no such table: main.users_old[39m
+[90m [2m❯[22m Database.prepare ../../../node_modules/better-sqlite3/lib/methods/wrappers.js:[2m5:21[22m[39m
+[90m [2m❯[22m Client_BetterSQLite3._query ../../../node_modules/knex/lib/dialects/better-sqlite3/index.js:[2m42:34[22m[39m
+[90m [2m❯[22m executeQuery ../../../node_modules/knex/lib/execution/internal/query-executioner.js:[2m37:17[22m[39m
+[90m [2m❯[22m Client_BetterSQLite3.query ../../../node_modules/knex/lib/client.js:[2m157:12[22m[39m
+[90m [2m❯[22m Runner.query ../../../node_modules/knex/lib/execution/runner.js:[2m141:36[22m[39m
+[90m [2m❯[22m ensureConnectionCallback ../../../node_modules/knex/lib/execution/internal/ensure-connection-callback.js:[2m13:17[22m[39m
+[90m [2m❯[22m Runner.ensureConnection ../../../node_modules/knex/lib/execution/runner.js:[2m318:20[22m[39m
+[90m [2m❯[22m Runner.run ../../../node_modules/knex/lib/execution/runner.js:[2m30:19[22m[39m
+[36m [2m❯[22m seedSession test/helpers/db.js:[2m134:3[22m[39m
+    [90m132| [39m  }[33m;[39m
+    [90m133| [39m
+    [90m134| [39m  [35mawait[39m [34mknex[39m([32m'sessions'[39m)[33m.[39m[34minsert[39m(session)[33m;[39m
+    [90m   | [39m  [31m^[39m
+    [90m135| [39m  [35mreturn[39m session[33m;[39m
+    [90m136| [39m}
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/integration/rbac-engine.test.js[2m > [22mRBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mcan() - ownership-scoped permissions[2m > [22mallows owner session_archive on own session even without admin role
+[31m[1mSqliteError[22m: insert into `sessions` (`archived_at`, `created_at`, `created_by`, `current_version`, `deleted_at`, `id`, `last_updated`, `published_at`, `title`) values (NULL, '2026-05-30T14:03:35.308Z', 'user_249u36aw', 1, NULL, 'sess_c896c0c37fb2', '2026-05-30T14:03:35.308Z', '2026-05-30T14:03:35.308Z', 'Test Session sess_c896c0c37fb2') - no such table: main.users_old[39m
+[90m [2m❯[22m Database.prepare ../../../node_modules/better-sqlite3/lib/methods/wrappers.js:[2m5:21[22m[39m
+[90m [2m❯[22m Client_BetterSQLite3._query ../../../node_modules/knex/lib/dialects/better-sqlite3/index.js:[2m42:34[22m[39m
+[90m [2m❯[22m executeQuery ../../../node_modules/knex/lib/execution/internal/query-executioner.js:[2m37:17[22m[39m
+[90m [2m❯[22m Client_BetterSQLite3.query ../../../node_modules/knex/lib/client.js:[2m157:12[22m[39m
+[90m [2m❯[22m Runner.query ../../../node_modules/knex/lib/execution/runner.js:[2m141:36[22m[39m
+[90m [2m❯[22m ensureConnectionCallback ../../../node_modules/knex/lib/execution/internal/ensure-connection-callback.js:[2m13:17[22m[39m
+[90m [2m❯[22m Runner.ensureConnection ../../../node_modules/knex/lib/execution/runner.js:[2m318:20[22m[39m
+[90m [2m❯[22m Runner.run ../../../node_modules/knex/lib/execution/runner.js:[2m30:19[22m[39m
+[36m [2m❯[22m seedSession test/helpers/db.js:[2m134:3[22m[39m
+    [90m132| [39m  }[33m;[39m
+    [90m133| [39m
+    [90m134| [39m  [35mawait[39m [34mknex[39m([32m'sessions'[39m)[33m.[39m[34minsert[39m(session)[33m;[39m
+    [90m   | [39m  [31m^[39m
+    [90m135| [39m  [35mreturn[39m session[33m;[39m
+    [90m136| [39m}
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/integration/rbac-engine.test.js[2m > [22mRBAC Engine (getUserPermissions, can, requirePermission)[2m > [22mrequirePermission middleware[2m > [22mreturns 403 when user is deactivated
+[31m[1mError[22m: expected 400 "Bad Request", got 401 "Unauthorized"[39m
+[36m [2m❯[22m test/integration/rbac-engine.test.js:[2m248:10[22m[39m
+    [90m246| [39m        [33m.[39m[35mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer [39m[36m${[39maccessToken[36m}[39m[32m`[39m)
+    [90m247| [39m        [33m.[39m[34msend[39m({ session_ids[33m:[39m [] })
+    [90m248| [39m        [33m.[39m[34mexpect[39m([34m400[39m)[33m;[39m [90m// Bad request due to empty array, not auth[39m
+    [90m   | [39m         [31m^[39m
+    [90m249| [39m
+    [90m250| [39m      // Now test with a valid request body to test requirePermission …
+[90m [2m❯[22m Test._assertStatus ../../../node_modules/supertest/lib/test.js:[2m309:14[22m[39m
+[90m [2m❯[22m ../../../node_modules/supertest/lib/test.js:[2m365:13[22m[39m
+[90m [2m❯[22m Test._assertFunction ../../../node_modules/supertest/lib/test.js:[2m342:13[22m[39m
+[90m [2m❯[22m Test.assert ../../../node_modules/supertest/lib/test.js:[2m195:23[22m[39m
+[90m [2m❯[22m localAssert ../../../node_modules/supertest/lib/test.js:[2m138:14[22m[39m
+[90m [2m❯[22m Server.<anonymous> ../../../node_modules/supertest/lib/test.js:[2m152:11[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/9]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m16 passed[39m[22m[90m (19)[39m
+[2m      Tests [22m [1m[31m8 failed[39m[22m[2m | [22m[1m[32m311 passed[39m[22m[90m (319)[39m
+[2m   Start at [22m 10:03:32
+[2m   Duration [22m 4.78s[2m (transform 911ms, setup 253ms, collect 11.05s, tests 15.03s, environment 9ms, prepare 4.76s)[22m
+

@@ -1,0 +1,136 @@
+
+> planpush@0.0.1 test:coverage
+> vitest run --coverage
+
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mC:/Users/Jordan/wkspaces/planpush.dev/.claude/worktrees/jaz-353-coverage[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+[90mstdout[2m | test/integration/push.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/comments.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/visibility-routes.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/dashboard-actions.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/dashboard-integration.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/auth-token-rotation.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/admin.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/auth-session.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/auth-device.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/rbac-engine.test.js
+[22m[39m[db] migrations up to date
+
+[90mstdout[2m | test/integration/token-revoke-rbac.test.js
+[22m[39m[db] migrations up to date
+
+ [32m✓[39m test/integration/token-revoke-rbac.test.js [2m([22m[2m3 tests[22m[2m)[22m[33m 987[2mms[22m[39m
+ [32m✓[39m test/integration/auth-session.test.js [2m([22m[2m11 tests[22m[2m)[22m[33m 1068[2mms[22m[39m
+ [32m✓[39m test/integration/rbac-engine.test.js [2m([22m[2m18 tests[22m[2m)[22m[33m 1103[2mms[22m[39m
+ [32m✓[39m test/integration/dashboard-integration.test.js [2m([22m[2m10 tests[22m[2m)[22m[33m 1201[2mms[22m[39m
+ [32m✓[39m test/integration/auth-device.test.js [2m([22m[2m12 tests[22m[2m)[22m[33m 1207[2mms[22m[39m
+ [32m✓[39m test/integration/comments.test.js [2m([22m[2m18 tests[22m[2m)[22m[33m 1290[2mms[22m[39m
+ [32m✓[39m test/integration/auth-token-rotation.test.js [2m([22m[2m13 tests[22m[2m)[22m[33m 1295[2mms[22m[39m
+ [32m✓[39m test/integration/dashboard-actions.test.js [2m([22m[2m21 tests[22m[2m)[22m[33m 1354[2mms[22m[39m
+ [32m✓[39m test/integration/admin.test.js [2m([22m[2m21 tests[22m[2m)[22m[33m 1388[2mms[22m[39m
+ [32m✓[39m test/integration/push.test.js [2m([22m[2m15 tests[22m[2m)[22m[33m 1469[2mms[22m[39m
+ [32m✓[39m test/integration/visibility-routes.test.js [2m([22m[2m15 tests[22m[2m)[22m[33m 1544[2mms[22m[39m
+ [32m✓[39m test/unit/crypto.test.js [2m([22m[2m42 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m test/unit/slack.test.js [2m([22m[2m19 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m test/unit/visibility.test.js [2m([22m[2m17 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m test/unit/html.test.js [2m([22m[2m32 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m test/unit/validate.test.js [2m([22m[2m21 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+[90mstdout[2m | test/integration/role-sync.test.js
+[22m[39m[db] migrations up to date
+
+ [32m✓[39m test/unit/sanitize.test.js [2m([22m[2m30 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+[90mstdout[2m | test/integration/health.test.js
+[22m[39m[db] migrations up to date
+
+ [32m✓[39m test/integration/role-sync.test.js [2m([22m[2m11 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+ [32m✓[39m test/integration/health.test.js [2m([22m[2m1 test[22m[2m)[22m[33m 405[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m19 passed[39m[22m[90m (19)[39m
+[2m      Tests [22m [1m[32m330 passed[39m[22m[90m (330)[39m
+[2m   Start at [22m 10:06:40
+[2m   Duration [22m 4.11s[2m (transform 584ms, setup 212ms, collect 8.85s, tests 14.48s, environment 6ms, prepare 4.12s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   76.61 |     78.7 |    58.9 |   76.61 |                   
+ src               |   70.84 |    56.66 |    62.5 |   70.84 |                   
+  app.js           |   88.67 |       25 |     100 |   88.67 | ...82-185,211-213 
+  db.js            |   45.23 |       50 |   66.66 |   45.23 | 19-28,31-44       
+  kv.js            |      80 |     92.3 |      75 |      80 | 30-37             
+  server.js        |       0 |        0 |       0 |       0 | 1-30              
+ src/assets        |       0 |        0 |       0 |       0 |                   
+  plan.js          |       0 |        0 |       0 |       0 | 1-73              
+ ...auth/providers |   34.56 |      100 |       0 |   34.56 |                   
+  github.js        |   32.35 |      100 |       0 |   32.35 | ...40,45-57,62-66 
+  index.js         |   73.68 |      100 |       0 |   73.68 | 13-15,18-19       
+  okta.js          |      30 |      100 |       0 |      30 | ...12,117,123-135 
+ src/dashboard     |    96.3 |    68.59 |     100 |    96.3 |                   
+  client.js        |     100 |      100 |     100 |     100 |                   
+  css.js           |     100 |      100 |     100 |     100 |                   
+  page.js          |     100 |    71.42 |     100 |     100 | 12                
+  queries.js       |     100 |     92.3 |     100 |     100 | 115,154           
+  sections.js      |    88.7 |    61.36 |     100 |    88.7 | ...20-240,287-294 
+ src/middleware    |   66.84 |    77.77 |   63.63 |   66.84 |                   
+  auth.js          |   81.61 |    79.06 |      75 |   81.61 | ...,66-77,130-133 
+  baseUrl.js       |      80 |       50 |     100 |      80 | 7-8               
+  scimAuth.js      |   14.63 |      100 |       0 |   14.63 | 5-23,26-41        
+ src/migrations    |   74.52 |     90.9 |   21.42 |   74.52 |                   
+  001_initial.js   |   89.24 |      100 |       0 |   89.24 | 80-89             
+  ...n_versions.js |   69.81 |       75 |       0 |   69.81 | 20-26,38-46       
+  ...n_features.js |   67.69 |      100 |       0 |   67.69 | 39-59             
+  ...d_features.js |   75.75 |      100 |       0 |   75.75 | 20-27             
+  ...visibility.js |   66.66 |      100 |       0 |   66.66 | 9-15              
+  ...n_rotation.js |      75 |      100 |       0 |      75 | 8-11              
+  ...identities.js |   55.19 |    66.66 |      50 |   55.19 | ...8,86-93,95-150 
+  ...es_user_id.js |      70 |      100 |       0 |      70 | 8-13              
+  ...bac_schema.js |   90.59 |    88.88 |      50 |   90.59 | 101-103,106-113   
+  ...le_mapping.js |   78.37 |      100 |      50 |   78.37 | 23-30             
+  ...ss_session.js |     100 |      100 |       0 |     100 |                   
+ src/routes        |   65.66 |    79.91 |   55.55 |   65.66 |                   
+  admin.js         |   75.12 |    81.08 |      75 |   75.12 | ...30-131,157-197 
+  assets.js        |   66.66 |      100 |       0 |   66.66 | 21-30             
+  auth.js          |   30.42 |    75.51 |   31.57 |   30.42 | ...61-747,776-829 
+  comments.js      |   95.26 |    76.19 |     100 |   95.26 | ...27-128,143-144 
+  dashboard.js     |     100 |      100 |     100 |     100 |                   
+  ...ardActions.js |    63.4 |    93.75 |      50 |    63.4 | ...32-168,172-194 
+  push.js          |     100 |       90 |     100 |     100 | 76,84,137-138     
+  serve.js         |   85.92 |     61.9 |      80 |   85.92 | ...,71-75,126-135 
+  sessionInfo.js   |    81.2 |     62.5 |     100 |    81.2 | ...2,28-29,84-104 
+  tokens.js        |      84 |      100 |      50 |      84 | 7-14              
+ src/scim          |   19.16 |      100 |       0 |   19.16 |                   
+  index.js         |   89.28 |      100 |       0 |   89.28 | 16-18             
+  users.js         |   11.58 |      100 |       0 |   11.58 | ...75-241,246-257 
+ src/utils         |   98.67 |    86.57 |     100 |   98.67 |                   
+  audit.js         |     100 |    42.85 |     100 |     100 | 7-11              
+  ...entOverlay.js |     100 |       25 |     100 |     100 | 748-760           
+  crypto.js        |     100 |      100 |     100 |     100 |                   
+  html.js          |   99.01 |    76.47 |     100 |   99.01 | 20-21             
+  rbac.js          |   87.71 |       88 |     100 |   87.71 | ...00-102,104-112 
+  roleSync.js      |     100 |      100 |     100 |     100 |                   
+  sanitize.js      |   95.08 |    81.81 |     100 |   95.08 | 40-42             
+  slack.js         |     100 |     92.3 |     100 |     100 | 58,83             
+  validate.js      |     100 |      100 |     100 |     100 |                   
+  visibility.js    |     100 |      100 |     100 |     100 |                   
+-------------------|---------|----------|---------|---------|-------------------
