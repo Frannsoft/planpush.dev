@@ -3,6 +3,18 @@ import request from 'supertest';
 import { getApp } from '../helpers/app.js';
 import { resetDb, seedUser, seedAccessToken, seedRefreshToken } from '../helpers/db.js';
 import { knex } from '../../src/db.js';
+import dns from 'node:dns/promises';
+
+// The test-connection SSRF guard resolves the issuer host before fetching.
+// Real hostnames (e.g. tenant.okta.com) don't resolve in CI, so mock DNS:
+// default → a public IP; individual tests override for private-address cases.
+vi.mock('node:dns/promises', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    default: { ...actual.default, lookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]) },
+  };
+});
 
 describe('Settings API (/api/admin/settings)', () => {
   let app;
@@ -383,6 +395,33 @@ describe('Settings API (/api/admin/settings)', () => {
         .expect(400);
 
       expect(res.body.error).toContain('Invalid OpenID configuration');
+    });
+
+    it('blocks an issuer that resolves to a private/loopback address (SSRF guard)', async () => {
+      const { accessToken } = await seedAdmin();
+      dns.lookup.mockResolvedValueOnce([{ address: '127.0.0.1', family: 4 }]);
+      global.fetch = vi.fn(() => { throw new Error('fetch must not be called for a blocked address'); });
+
+      const res = await request(app)
+        .post('/api/admin/settings/test-connection')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ issuer: 'https://internal.evil.example' })
+        .expect(400);
+
+      expect(res.body.error).toContain('disallowed address');
+    });
+
+    it('blocks an issuer pointing at the cloud-metadata IP (169.254.169.254)', async () => {
+      const { accessToken } = await seedAdmin();
+      dns.lookup.mockResolvedValueOnce([{ address: '169.254.169.254', family: 4 }]);
+
+      const res = await request(app)
+        .post('/api/admin/settings/test-connection')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ issuer: 'https://metadata.example' })
+        .expect(400);
+
+      expect(res.body.error).toContain('disallowed address');
     });
   });
 });

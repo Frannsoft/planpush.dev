@@ -7,6 +7,34 @@ import { knex } from '../db.js';
 import { writeAuditLog } from '../utils/audit.js';
 import { getAllSettings, getSettingValue, validateSettingNotLocked, isSecretSetting } from '../utils/settings.js';
 import { encryptSecret, decryptSecret } from '../utils/secrets.js';
+import dns from 'node:dns/promises';
+
+// SSRF guard: reject hosts that resolve to loopback/private/link-local ranges
+// (cloud metadata 169.254.169.254, localhost, RFC1918, ...) so the admin
+// "test connection" action can't be used to probe internal services.
+function isBlockedV4(ip) {
+  const p = ip.split('.').map(Number);
+  if (p.length !== 4 || p.some(n => Number.isNaN(n) || n < 0 || n > 255)) return true;
+  const [a, b] = p;
+  if (a === 0 || a === 127) return true;              // this-network / loopback
+  if (a === 10) return true;                          // RFC1918
+  if (a === 172 && b >= 16 && b <= 31) return true;   // RFC1918
+  if (a === 192 && b === 168) return true;            // RFC1918
+  if (a === 169 && b === 254) return true;            // link-local + cloud metadata
+  if (a === 100 && b >= 64 && b <= 127) return true;  // CGNAT
+  return false;
+}
+function isBlockedAddress(ip) {
+  if (ip.includes(':')) {
+    const lower = ip.toLowerCase();
+    if (lower === '::1' || lower === '::') return true;
+    if (lower.startsWith('fe80') || lower.startsWith('fc') || lower.startsWith('fd')) return true;
+    const mapped = lower.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+    if (mapped) return isBlockedV4(mapped[1]);
+    return false;
+  }
+  return isBlockedV4(ip);
+}
 
 /**
  * GET /api/admin/settings
@@ -145,6 +173,17 @@ export async function handleTestOktaConnection(req, res) {
       return res.status(400).json({ error: 'issuer must be a valid URL' });
     }
 
+    // SSRF guard: resolve the issuer host and reject private/loopback/link-local targets
+    let resolved;
+    try {
+      resolved = await dns.lookup(issuerUrl.hostname, { all: true });
+    } catch {
+      return res.status(400).json({ error: 'issuer host could not be resolved' });
+    }
+    if (resolved.length === 0 || resolved.some(r => isBlockedAddress(r.address))) {
+      return res.status(400).json({ error: 'issuer resolves to a disallowed address' });
+    }
+
     // Fetch .well-known endpoint
     const wellKnownUrl = new URL('/.well-known/openid-configuration', issuer).toString();
     const controller = new AbortController();
@@ -154,6 +193,7 @@ export async function handleTestOktaConnection(req, res) {
       const response = await fetch(wellKnownUrl, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
+        redirect: 'manual', // don't follow 3xx to an internal target
         signal: controller.signal,
       });
 
@@ -201,10 +241,7 @@ export async function handleTestOktaConnection(req, res) {
       }
 
       console.error('[settings] Test connection failed:', err.message);
-      res.status(500).json({
-        error: 'Connection failed',
-        details: err.message.slice(0, 100),
-      });
+      res.status(500).json({ error: 'Connection failed' });
     }
   } catch (err) {
     console.error('[settings] Test connection error:', err.message);
