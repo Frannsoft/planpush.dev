@@ -212,6 +212,7 @@ const OVERLAY_JS = `(function() {
   async function postComment(content, anchor) {
     if (state.submitting) return;
     state.submitting = true;
+    var priorComments = state.comments.slice();
     try {
       var resp = await fetch(API + '/api/comments', {
         method: 'POST',
@@ -228,26 +229,48 @@ const OVERLAY_JS = `(function() {
         updateBadge();
         render();
         composeInput.value = '';
+      } else {
+        state.comments = priorComments;
+        updateBadge();
+        render();
+        showToast('Failed to post comment. Please try again.');
       }
-    } catch(e) {} finally { state.submitting = false; }
+    } catch(e) {
+      state.comments = priorComments;
+      updateBadge();
+      render();
+      showToast('Failed to post comment. Please try again.');
+    } finally { state.submitting = false; }
   }
 
   async function resolveComment(commentId) {
+    var priorResolved = null;
+    var commentIdx = -1;
+    for (var i = 0; i < state.comments.length; i++) {
+      if (state.comments[i].id === commentId) {
+        commentIdx = i;
+        priorResolved = state.comments[i].resolved;
+        break;
+      }
+    }
+    if (commentIdx === -1) return;
+    state.comments[commentIdx].resolved = 1;
+    render();
     try {
       var resp = await fetch(API + '/api/comments/' + commentId + '/resolve', {
         method: 'PATCH',
         credentials: 'include',
       });
-      if (resp.ok) {
-        for (var i = 0; i < state.comments.length; i++) {
-          if (state.comments[i].id === commentId) {
-            state.comments[i].resolved = 1;
-            break;
-          }
-        }
+      if (!resp.ok) {
+        state.comments[commentIdx].resolved = priorResolved;
         render();
+        showToast('Failed to resolve comment. Please try again.');
       }
-    } catch(e) {}
+    } catch(e) {
+      state.comments[commentIdx].resolved = priorResolved;
+      render();
+      showToast('Failed to resolve comment. Please try again.');
+    }
   }
 
   function updateAnchorBubbles() {
@@ -375,6 +398,10 @@ const OVERLAY_JS = `(function() {
     if (prev) prev.classList.remove('pp-anchor-highlight');
   }
 
+  // Anchor stability contract: scroll to an element marked with data-anchor.
+  // If the anchor does not exist in the current version (missing-anchor case), gracefully no-op.
+  // Anchors are identified by CSS.escape(anchorId); old versions may not have the anchored element,
+  // which returns null from querySelector, triggering the guard and returning early.
   function scrollToAnchor(anchorId) {
     setTimeout(function() {
       var targetEl = document.querySelector('[data-anchor="' + CSS.escape(anchorId) + '"]');
@@ -429,6 +456,14 @@ const OVERLAY_JS = `(function() {
     if (diff < 3600) return Math.floor(diff/60) + 'm ago';
     if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
     return Math.floor(diff/86400) + 'd ago';
+  }
+
+  function showToast(message) {
+    var toast = document.getElementById('pp-share-toast');
+    if (!toast) return;
+    toast.textContent = message;
+    toast.classList.add('pp-visible');
+    setTimeout(function() { toast.classList.remove('pp-visible'); }, 3000);
   }
 
   startPolling();
