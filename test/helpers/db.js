@@ -158,7 +158,24 @@ export async function seedToken({ user_id, ...overrides } = {}) {
     ...overrides,
   };
 
-  await knex('api_tokens').insert(token);
+  try {
+    await knex('api_tokens').insert(token);
+  } catch (err) {
+    // Migration table-rebuilds can leave a dangling users_old reference; mirror the
+    // workaround used by seedUser/seedRefreshToken.
+    if (err && err.message && err.message.includes('users_old')) {
+      await knex.raw('PRAGMA foreign_keys = OFF');
+      try {
+        await knex.raw('DROP TABLE IF EXISTS users_old');
+        await knex.raw('DROP TABLE IF EXISTS users_old_restore');
+      } catch (e) {
+        // Ignore
+      }
+      await knex('api_tokens').insert(token);
+    } else {
+      throw err;
+    }
+  }
   return { ...token, secret };
 }
 

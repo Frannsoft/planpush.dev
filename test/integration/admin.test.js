@@ -528,10 +528,9 @@ describe('Admin Actions Integration', () => {
     });
 
     it('allows admin to revoke any user\'s token', async () => {
-      const developer = await seedUser({ role: 'developer' });
-      const admin = await seedUser({ role: 'admin' });
-
-      // Seed admin role + permission
+      // Seed admin role + permission BEFORE creating the admin user, so seedUser assigns
+      // the role via user_roles (the revoke endpoint now checks live RBAC user_manage,
+      // not the role baked into the token — see JAZ-351).
       const adminRole = await knex('roles').where({ id: 'admin' }).first();
       if (!adminRole) {
         await knex('roles').insert({ id: 'admin', name: 'admin', description: 'Administrator' });
@@ -544,6 +543,9 @@ describe('Admin Actions Integration', () => {
       if (!rolePerm) {
         await knex('role_permissions').insert({ role_id: 'admin', permission_id: 'user_manage' });
       }
+
+      const developer = await seedUser({ role: 'developer' });
+      const admin = await seedUser({ role: 'admin' });
 
       const { tokenId: adminTokenId } = await seedRefreshToken({ user_id: admin.id });
       const adminAccessToken = await seedAccessToken({

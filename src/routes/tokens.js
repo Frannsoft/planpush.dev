@@ -1,5 +1,6 @@
 import { knex } from '../db.js';
 import { writeAuditLog } from '../utils/audit.js';
+import { can } from '../utils/rbac.js';
 
 // GET /api/tokens — list the requesting user's active tokens
 export async function handleListTokens(req, res) {
@@ -26,9 +27,13 @@ export async function handleRevokeToken(req, res) {
     return res.status(404).json({ error: 'token_not_found' });
   }
 
-  // Non-admins can only revoke their own tokens
-  if (token.user_id !== req.tokenData.user_id && req.tokenData.role !== 'admin') {
-    return res.status(403).json({ error: 'forbidden' });
+  // Revoking another user's token requires live RBAC (user_manage), not the
+  // possibly-stale role baked into the session/access token at login.
+  if (token.user_id !== req.tokenData.user_id) {
+    const isManager = await can({ id: req.tokenData.user_id }, 'user_manage');
+    if (!isManager) {
+      return res.status(403).json({ error: 'forbidden' });
+    }
   }
 
   await knex('api_tokens').where({ id: tokenId }).update({ revoked_at: knex.fn.now() });
