@@ -1,0 +1,416 @@
+
+> planpush@0.0.1 test
+> vitest run
+
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mC:/Users/Jordan/wkspaces/planpush.dev/.claude/worktrees/jaz-326-unit-tests[39m
+
+ [31m❯[39m test/unit/visibility.test.js [2m([22m[2m17 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 15[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mPublished sessions (published_at is set)[2m > [22mallows anyone to access published sessions[32m 2[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mPublished sessions (published_at is set)[2m > [22mallows published sessions with any permission set[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mPrivate sessions (published_at is null)[2m > [22mblocks access for unrelated users without session_view_private[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mPrivate sessions (published_at is null)[2m > [22mallows owner to access own private session[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mPrivate sessions (published_at is null)[2m > [22mallows users with session_view_private permission to access private sessions[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mPrivate sessions (published_at is null)[2m > [22mallows owner with session_view_private[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mPrivate sessions (published_at is null)[2m > [22mblocks access if only other permissions are present[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mPermission set formats[2m > [22mchecks for exact permission string[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mPermission set formats[2m > [22mhandles empty permission array for private sessions[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mPermission set formats[2m > [22mhandles multiple permissions in array[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mEdge cases[2m > [22mhandles null/undefined tokenData gracefully[32m 0[2mms[22m[39m
+[31m   [31m×[31m visibility.js[2m > [22mcanAccessSession[2m > [22mEdge cases[2m > [22mprivate session blocks null/undefined tokenData[39m[32m 8[2mms[22m[39m
+[31m     → Cannot read properties of null (reading 'user_id')[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mEdge cases[2m > [22mchecks created_by field exactly[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mEdge cases[2m > [22mhandles session with no created_by field[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mEdge cases[2m > [22mpublished_at = empty string should be treated as falsy[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mEdge cases[2m > [22mpublished_at = 0 (edge) should be treated as falsy[32m 0[2mms[22m[39m
+   [32m✓[39m visibility.js[2m > [22mcanAccessSession[2m > [22mTruth table[2m > [22msummarizes all valid combinations[32m 0[2mms[22m[39m
+ [31m❯[39m test/unit/validate.test.js [2m([22m[2m21 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 22[2mms[22m[39m
+[31m   [31m×[31m validate.js[2m > [22misValidSessionId[2m > [22maccepts legacy sess_ format with 12 hex chars[39m[32m 13[2mms[22m[39m
+[31m     → expected false to be true // Object.is equality[39m
+   [32m✓[39m validate.js[2m > [22misValidSessionId[2m > [22mrejects sess_ with non-hex chars[32m 1[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidSessionId[2m > [22mrejects sess_ with wrong length[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidSessionId[2m > [22maccepts named slug format (lowercase alphanumeric + hyphens)[32m 1[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidSessionId[2m > [22mrejects slug with uppercase or invalid chars[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidSessionId[2m > [22mrejects slug starting or ending with hyphen[32m 0[2mms[22m[39m
+[31m   [31m×[31m validate.js[2m > [22misValidSessionId[2m > [22mrejects slug over 64 chars[39m[32m 1[2mms[22m[39m
+[31m     → expected true to be false // Object.is equality[39m
+   [32m✓[39m validate.js[2m > [22misValidSessionId[2m > [22mrejects non-string input[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidSessionId[2m > [22mrejects empty string[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidDeviceCode[2m > [22maccepts valid device code format: dc_ + 32 hex chars[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidDeviceCode[2m > [22mrejects wrong prefix[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidDeviceCode[2m > [22mrejects wrong length[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidDeviceCode[2m > [22mrejects non-hex chars[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidDeviceCode[2m > [22mrejects non-string input[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidUserCode[2m > [22maccepts valid user code format: XXXX-XXXX with allowed chars[32m 0[2mms[22m[39m
+[31m   [31m×[31m validate.js[2m > [22misValidUserCode[2m > [22muses alphabet without O/0/1/I to avoid confusion[39m[32m 1[2mms[22m[39m
+[31m     → expected true to be false // Object.is equality[39m
+   [32m✓[39m validate.js[2m > [22misValidUserCode[2m > [22mrejects wrong format[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidUserCode[2m > [22mrejects uppercase and lowercase mixed[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidUserCode[2m > [22mrejects invalid chars[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidUserCode[2m > [22mrejects non-string input[32m 0[2mms[22m[39m
+   [32m✓[39m validate.js[2m > [22misValidUserCode[2m > [22mrejects empty string[32m 0[2mms[22m[39m
+ [31m❯[39m test/unit/html.test.js [2m([22m[2m32 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 22[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22mescHtml[2m > [22mescapes ampersand[32m 2[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22mescHtml[2m > [22mescapes less-than[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22mescHtml[2m > [22mescapes greater-than[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22mescHtml[2m > [22mescapes double quotes[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22mescHtml[2m > [22mescapes single quotes[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22mescHtml[2m > [22mescapes all five chars together[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22mescHtml[2m > [22mpreserves normal text[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22mescHtml[2m > [22mhandles empty string[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22mescHtml[2m > [22mconverts non-string input to string first[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22mescHtml[2m > [22mdoes not double-escape already escaped entities[32m 0[2mms[22m[39m
+[31m   [31m×[31m html.js[2m > [22mescHtml[2m > [22mescapes XSS payloads[39m[32m 10[2mms[22m[39m
+[31m     → expected '&lt;img src=x onerror=&quot;alert(&#3…' not to contain 'onerror'[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mallows relative paths[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mallows relative paths with query strings[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mallows relative paths with hash fragments[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mallows relative paths with both query and hash[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mallows root path[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mreturns fallback for absolute URLs (open redirect prevention)[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mreturns fallback for protocol-relative URLs (open redirect prevention)[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mreturns fallback for javascript: URIs[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mreturns fallback for data: URIs[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mhandles null/undefined by returning fallback[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mhandles empty string by returning fallback[32m 0[2mms[22m[39m
+[31m   [31m×[31m html.js[2m > [22msafeRedirectUrl[2m > [22mhandles whitespace-only string[39m[32m 2[2mms[22m[39m
+[31m     → expected '/' to be '/dashboard' // Object.is equality[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mallows custom fallback[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mpreserves custom fallback for valid paths too[32m 0[2mms[22m[39m
+[31m   [31m×[31m html.js[2m > [22msafeRedirectUrl[2m > [22mrejects backslash-based paths (non-standard but potential bypass)[39m[32m 1[2mms[22m[39m
+[31m     → expected '/admin' to contain '\'[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mhandles encoded characters in paths[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mrejects URLs with different hostnames via various methods[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mcase-insensitive for scheme detection[32m 0[2mms[22m[39m
+[31m   [31m×[31m html.js[2m > [22msafeRedirectUrl[2m > [22mhandles malformed URLs gracefully[39m[32m 1[2mms[22m[39m
+[31m     → expected '/ht!tp://evil' to be '/dashboard' // Object.is equality[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mhandles very long URLs[32m 0[2mms[22m[39m
+   [32m✓[39m html.js[2m > [22msafeRedirectUrl[2m > [22mpreserves query and hash in relative URLs[32m 0[2mms[22m[39m
+ [31m❯[39m test/unit/crypto.test.js [2m([22m[2m42 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 38[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateId[2m > [22mreturns a hex string[32m 2[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateId[2m > [22mgenerates 32 character hex string (16 bytes * 2)[32m 1[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateId[2m > [22mgenerates different IDs on each call[32m 1[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateDeviceCode[2m > [22mgenerates valid device code matching format[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateDeviceCode[2m > [22mstarts with dc_[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateDeviceCode[2m > [22mhas correct length: dc_ + 32 hex chars = 35 total[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateDeviceCode[2m > [22mgenerates different codes on each call[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateUserCode[2m > [22mgenerates valid user code matching format[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateUserCode[2m > [22mhas format XXXX-XXXX (8 chars + hyphen)[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateUserCode[2m > [22muses only allowed characters (no O/0/1/I)[32m 1[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateUserCode[2m > [22mgenerates different codes on each call[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateUserCode[2m > [22mhas exactly one hyphen at position 4[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateRefreshToken[2m > [22mstarts with rt_[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateRefreshToken[2m > [22mis rt_ + 64 hex chars (2x generateId)[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateRefreshToken[2m > [22mgenerates different tokens on each call[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateAccessToken[2m > [22mstarts with at_[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateAccessToken[2m > [22mis at_ + 64 hex chars (2x generateId)[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateAccessToken[2m > [22mgenerates different tokens on each call[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateSessionId[2m > [22mgenerates valid session ID matching legacy format[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateSessionId[2m > [22mstarts with sess_[32m 0[2mms[22m[39m
+[31m   [31m×[31m crypto.js[2m > [22mgenerateSessionId[2m > [22mhas format sess_ + 12 hex chars = 15 total[39m[32m 12[2mms[22m[39m
+[31m     → expected 'sess_d50371afe74d' to have a length of 15 but got 17[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateSessionId[2m > [22mgenerates different session IDs on each call[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateNonce[2m > [22mreturns a base64url-encoded string[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateNonce[2m > [22mencodes 16 bytes to base64url (21-22 characters)[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateNonce[2m > [22mgenerates different nonces on each call[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mgenerateNonce[2m > [22mdoes not contain padding characters[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mhashToken[2m > [22mreturns a deterministic hash for the same token[32m 2[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mhashToken[2m > [22mreturns different hashes for different tokens[32m 1[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mhashToken[2m > [22mreturns a 64-character hex string (SHA-256 = 256 bits = 32 bytes * 2)[32m 2[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mhashToken[2m > [22mproduces valid SHA-256 hashes[32m 3[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mhashToken[2m > [22mhandles empty string[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mhashToken[2m > [22mhandles long tokens[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mhashToken[2m > [22mhandles special characters[32m 1[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mhashToken[2m > [22mis async[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mtoken format consistency[2m > [22mgenerated device code is always valid[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mtoken format consistency[2m > [22mgenerated user code is always valid[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mtoken format consistency[2m > [22mgenerated session ID is always valid[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mtoken format consistency[2m > [22mrefresh token format is consistent[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mtoken format consistency[2m > [22maccess token format is consistent[32m 0[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mrandomness quality[2m > [22mdevice codes have high entropy across runs[32m 1[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mrandomness quality[2m > [22muser codes have high entropy across runs[32m 1[2mms[22m[39m
+   [32m✓[39m crypto.js[2m > [22mrandomness quality[2m > [22msession IDs have high entropy across runs[32m 1[2mms[22m[39m
+ [31m❯[39m test/unit/sanitize.test.js [2m([22m[2m29 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 35[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves script tags entirely[32m 8[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves iframe elements[32m 1[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves form elements[32m 1[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves style tags[32m 1[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves object, embed, applet, base, noscript tags[32m 1[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves on* event handlers[32m 1[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves srcdoc attribute (contains arbitrary HTML)[32m 0[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves ping attribute (CSRF vector)[32m 1[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves inline style attributes[32m 1[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mneutralizes javascript: URI scheme in href[32m 1[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mneutralizes javascript: URI scheme in src[32m 0[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mneutralizes vbscript: URI scheme[32m 1[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mneutralizes data: URI scheme[32m 0[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mcase-insensitive: neutralizes JAVASCRIPT:[32m 0[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mcase-insensitive: neutralizes Javascript: with whitespace[32m 0[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mpreserves safe link rel=stylesheet[32m 1[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mpreserves other safe link rels[32m 1[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves unsafe link rels[32m 0[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves meta http-equiv (can redirect or set headers)[32m 0[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves meta referrer policy[32m 0[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mpreserves normal meta tags[32m 0[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mneutralizes dangerous URI in link href[32m 0[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mpreserves safe attributes on elements[32m 0[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mpreserves valid links[32m 0[2mms[22m[39m
+[31m   [31m×[31m sanitize.js[2m > [22msanitizeHtml[2m > [22mhandles empty HTML[39m[32m 7[2mms[22m[39m
+[31m     → expected '<html><head></head><body></body></htm…' to be '' // Object.is equality[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mhandles nested dangerous elements[32m 0[2mms[22m[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mpreserves semantic HTML[32m 1[2mms[22m[39m
+[31m   [31m×[31m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves formaction (can redirect form to evil endpoint)[39m[32m 2[2mms[22m[39m
+[31m     → expected '<html><head></head><body><button form…' not to contain 'formaction'[39m
+   [32m✓[39m sanitize.js[2m > [22msanitizeHtml[2m > [22mremoves action attribute from elements[32m 0[2mms[22m[39m
+[90mstdout[2m | test/integration/health.test.js
+[22m[39m[db] migrations up to date
+
+ [32m✓[39m test/integration/health.test.js [2m([22m[2m1 test[22m[2m)[22m[33m 561[2mms[22m[39m
+ [31m❯[39m test/unit/slack.test.js [2m([22m[2m19 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[33m 5043[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mnotifySlack webhook URL validation[2m > [22mskips notification when SLACK_WEBHOOK_URL is not set[32m 3[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mnotifySlack webhook URL validation[2m > [22mskips notification when SLACK_WEBHOOK_URL is empty string[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mnotifySlack webhook URL validation[2m > [22mskips notification when SLACK_WEBHOOK_URL is whitespace only[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mnotifySlack webhook URL validation[2m > [22mrejects webhook URLs not from hooks.slack.com (SSRF prevention)[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mnotifySlack webhook URL validation[2m > [22maccepts webhook URLs from hooks.slack.com (HTTPS)[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mmrkdwn escaping (prevents injection)[2m > [22mescapes & in author, title, and content[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mmrkdwn escaping (prevents injection)[2m > [22mescapes < in fields[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mmrkdwn escaping (prevents injection)[2m > [22mescapes > in fields[32m 1[2mms[22m[39m
+[31m   [31m×[31m slack.js[2m > [22mmrkdwn escaping (prevents injection)[2m > [22mescapes all three chars together in mrkdwn injection attempt[39m[32m 14[2mms[22m[39m
+[31m     → expected '*User &amp; Admin&lt;img src=x onerro…' not to contain 'onerror='[39m
+   [32m✓[39m slack.js[2m > [22mevent handling[2m > [22mhandles comment_added event[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mevent handling[2m > [22mhandles plan_updated event[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mevent handling[2m > [22mhandles comment_resolved event[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mevent handling[2m > [22mignores unknown event types[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mcontent truncation[2m > [22mtruncates long content to 200 chars + ...[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22mcontent truncation[2m > [22mdoes not truncate content under 200 chars[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22manchor formatting[2m > [22mincludes anchor in comment_added when provided[32m 1[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22manchor formatting[2m > [22momits anchor formatting when not provided[32m 0[2mms[22m[39m
+   [32m✓[39m slack.js[2m > [22merror handling[2m > [22mcatches and logs fetch errors without throwing[32m 2[2mms[22m[39m
+[31m   [31m×[31m slack.js[2m > [22merror handling[2m > [22menforces 10 second timeout on fetch[39m[33m 5011[2mms[22m[39m
+[31m     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 13 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m test/unit/crypto.test.js[2m > [22mcrypto.js[2m > [22mgenerateSessionId[2m > [22mhas format sess_ + 12 hex chars = 15 total
+[31m[1mAssertionError[22m: expected 'sess_d50371afe74d' to have a length of 15 but got 17[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 15[39m
+[31m+ 17[39m
+
+[36m [2m❯[22m test/unit/crypto.test.js:[2m146:18[22m[39m
+    [90m144| [39m    [34mit[39m([32m'has format sess_ + 12 hex chars = 15 total'[39m[33m,[39m () [33m=>[39m {
+    [90m145| [39m      [35mconst[39m id [33m=[39m [34mgenerateSessionId[39m()[33m;[39m
+    [90m146| [39m      [34mexpect[39m(id)[33m.[39m[34mtoHaveLength[39m([34m15[39m)[33m;[39m
+    [90m   | [39m                 [31m^[39m
+    [90m147| [39m      [34mexpect[39m([36m/^sess_[0-9a-f]{12}$/[39m[33m.[39m[34mtest[39m(id))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m148| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/unit/html.test.js[2m > [22mhtml.js[2m > [22mescHtml[2m > [22mescapes XSS payloads
+[31m[1mAssertionError[22m: expected '&lt;img src=x onerror=&quot;alert(&#3…' not to contain 'onerror'[39m
+
+Expected: [32m"onerror"[39m
+Received: [31m"&lt;img src=x onerror=&quot;alert(&#39;xss&#39;)&quot;&gt;"[39m
+
+[36m [2m❯[22m test/unit/html.test.js:[2m63:27[22m[39m
+    [90m 61| [39m      [35mconst[39m escaped [33m=[39m [34mescHtml[39m(xssPayload)[33m;[39m
+    [90m 62| [39m      [34mexpect[39m(escaped)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m'<img'[39m)[33m;[39m
+    [90m 63| [39m      [34mexpect[39m(escaped)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m'onerror'[39m)[33m;[39m
+    [90m   | [39m                          [31m^[39m
+    [90m 64| [39m      [34mexpect[39m(escaped)[33m.[39m[34mtoContain[39m([32m'&lt;'[39m)[33m;[39m
+    [90m 65| [39m      [34mexpect[39m(escaped)[33m.[39m[34mtoContain[39m([32m'&gt;'[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/unit/html.test.js[2m > [22mhtml.js[2m > [22msafeRedirectUrl[2m > [22mhandles whitespace-only string
+[31m[1mAssertionError[22m: expected '/' to be '/dashboard' // Object.is equality[39m
+
+Expected: [32m"/[7mdashboard[27m"[39m
+Received: [31m"/"[39m
+
+[36m [2m❯[22m test/unit/html.test.js:[2m124:38[22m[39m
+    [90m122| [39m
+    [90m123| [39m    [34mit[39m([32m'handles whitespace-only string'[39m[33m,[39m () [33m=>[39m {
+    [90m124| [39m      [34mexpect[39m([34msafeRedirectUrl[39m([32m'   '[39m))[33m.[39m[34mtoBe[39m([32m'/dashboard'[39m)[33m;[39m
+    [90m   | [39m                                     [31m^[39m
+    [90m125| [39m    })[33m;[39m
+    [90m126| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/unit/html.test.js[2m > [22mhtml.js[2m > [22msafeRedirectUrl[2m > [22mrejects backslash-based paths (non-standard but potential bypass)
+[31m[1mAssertionError[22m: expected '/admin' to contain '\'[39m
+
+Expected: [32m"\"[39m
+Received: [31m"/admin"[39m
+
+[36m [2m❯[22m test/unit/html.test.js:[2m143:22[22m[39m
+    [90m141| [39m      [35mconst[39m result [33m=[39m [34msafeRedirectUrl[39m([32m'\\..\\..\\admin'[39m)[33m;[39m
+    [90m142| [39m      // Should be treated as relative path, and the constructor will …
+    [90m143| [39m      [34mexpect[39m(result)[33m.[39m[34mtoContain[39m([32m'\\'[39m)[33m;[39m
+    [90m   | [39m                     [31m^[39m
+    [90m144| [39m    })[33m;[39m
+    [90m145| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/unit/html.test.js[2m > [22mhtml.js[2m > [22msafeRedirectUrl[2m > [22mhandles malformed URLs gracefully
+[31m[1mAssertionError[22m: expected '/ht!tp://evil' to be '/dashboard' // Object.is equality[39m
+
+Expected: [32m"/[7mdashboard[27m"[39m
+Received: [31m"/[7mht!tp://evil[27m"[39m
+
+[36m [2m❯[22m test/unit/html.test.js:[2m171:47[22m[39m
+    [90m169| [39m    [34mit[39m([32m'handles malformed URLs gracefully'[39m[33m,[39m () [33m=>[39m {
+    [90m170| [39m      [90m// Malformed URLs should fall back[39m
+    [90m171| [39m      [34mexpect[39m([34msafeRedirectUrl[39m([32m'ht!tp://evil'[39m))[33m.[39m[34mtoBe[39m([32m'/dashboard'[39m)[33m;[39m
+    [90m   | [39m                                              [31m^[39m
+    [90m172| [39m    })[33m;[39m
+    [90m173| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/unit/sanitize.test.js[2m > [22msanitize.js[2m > [22msanitizeHtml[2m > [22mhandles empty HTML
+[31m[1mAssertionError[22m: expected '<html><head></head><body></body></htm…' to be '' // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[31m+ <html><head></head><body></body></html>[39m
+
+[36m [2m❯[22m test/unit/sanitize.test.js:[2m203:22[22m[39m
+    [90m201| [39m    [34mit[39m([32m'handles empty HTML'[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m202| [39m      [35mconst[39m result [33m=[39m [35mawait[39m [34msanitizeHtml[39m([32m''[39m)[33m;[39m
+    [90m203| [39m      [34mexpect[39m(result)[33m.[39m[34mtoBe[39m([32m''[39m)[33m;[39m
+    [90m   | [39m                     [31m^[39m
+    [90m204| [39m    })[33m;[39m
+    [90m205| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/unit/sanitize.test.js[2m > [22msanitize.js[2m > [22msanitizeHtml[2m > [22mremoves formaction (can redirect form to evil endpoint)
+[31m[1mAssertionError[22m: expected '<html><head></head><body><button form…' not to contain 'formaction'[39m
+
+Expected: [32m"formaction"[39m
+Received: [31m"<html><head></head><body><button formaction="https://evil.com/steal">Click</button></body></html>"[39m
+
+[36m [2m❯[22m test/unit/sanitize.test.js:[2m230:26[22m[39m
+    [90m228| [39m      const html = '<button formaction="https://evil.com/steal">Click<…
+    [90m229| [39m      [35mconst[39m result [33m=[39m [35mawait[39m [34msanitizeHtml[39m(html)[33m;[39m
+    [90m230| [39m      [34mexpect[39m(result)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m'formaction'[39m)[33m;[39m
+    [90m   | [39m                         [31m^[39m
+    [90m231| [39m    })[33m;[39m
+    [90m232| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/unit/slack.test.js[2m > [22mslack.js[2m > [22mmrkdwn escaping (prevents injection)[2m > [22mescapes all three chars together in mrkdwn injection attempt
+[31m[1mAssertionError[22m: expected '*User &amp; Admin&lt;img src=x onerro…' not to contain 'onerror='[39m
+
+Expected: [32m"onerror="[39m
+Received: [31m"*User &amp; Admin&lt;img src=x onerror=alert(1)&gt;Details* commented on *<https://example.com/p/test|Innocent Title>*"[39m
+
+[36m [2m❯[22m test/unit/slack.test.js:[2m184:28[22m[39m
+    [90m182| [39m      [34mexpect[39m(markdown)[33m.[39m[34mtoContain[39m([32m'&amp;'[39m)[33m;[39m
+    [90m183| [39m      [34mexpect[39m(markdown)[33m.[39m[34mtoContain[39m([32m'&lt;'[39m)[33m;[39m
+    [90m184| [39m      [34mexpect[39m(markdown)[33m.[39mnot[33m.[39m[34mtoContain[39m([32m'onerror='[39m)[33m;[39m
+    [90m   | [39m                           [31m^[39m
+    [90m185| [39m    })[33m;[39m
+    [90m186| [39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/unit/slack.test.js[2m > [22mslack.js[2m > [22merror handling[2m > [22menforces 10 second timeout on fetch
+[31m[1mError[22m: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+[36m [2m❯[22m test/unit/slack.test.js:[2m376:7[22m[39m
+    [90m374| [39m    })[33m;[39m
+    [90m375| [39m
+    [90m376| [39m    [34mit[39m([32m'enforces 10 second timeout on fetch'[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m   | [39m      [31m^[39m
+    [90m377| [39m      [35mlet[39m controller[33m;[39m
+    [90m378| [39m      global[33m.[39mfetch [33m=[39m vi[33m.[39m[34mfn[39m()[33m.[39m[34mmockImplementation[39m((url[33m,[39m opts) [33m=>[39m {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/unit/validate.test.js[2m > [22mvalidate.js[2m > [22misValidSessionId[2m > [22maccepts legacy sess_ format with 12 hex chars
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m test/unit/validate.test.js:[2m9:57[22m[39m
+    [90m  7| [39m      [34mexpect[39m([34misValidSessionId[39m([32m'sess_064d4a62049b'[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m  8| [39m      [34mexpect[39m([34misValidSessionId[39m([32m'sess_000000000000'[39m))[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m  9| [39m      expect(isValidSessionId('sess_ffffffffffffffff')).toBe(true); //…
+    [90m   | [39m                                                        [31m^[39m
+    [90m 10| [39m    })[33m;[39m
+    [90m 11| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/unit/validate.test.js[2m > [22mvalidate.js[2m > [22misValidSessionId[2m > [22mrejects slug over 64 chars
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m test/unit/validate.test.js:[2m45:48[22m[39m
+    [90m 43| [39m      [35mconst[39m longSlug [33m=[39m [32m'a'[39m[33m.[39m[34mrepeat[39m([34m65[39m)[33m;[39m
+    [90m 44| [39m      [34mexpect[39m([34misValidSessionId[39m(longSlug))[33m.[39m[34mtoBe[39m([35mfalse[39m)[33m;[39m
+    [90m 45| [39m      expect(isValidSessionId('a'.repeat(64))).toBe(false); // 64 is m…
+    [90m   | [39m                                               [31m^[39m
+    [90m 46| [39m      expect(isValidSessionId('a-' + 'b'.repeat(61) + '-a')).toBe(true…
+    [90m 47| [39m    })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/unit/validate.test.js[2m > [22mvalidate.js[2m > [22misValidUserCode[2m > [22muses alphabet without O/0/1/I to avoid confusion
+[31m[1mAssertionError[22m: expected true to be false // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- false[39m
+[31m+ true[39m
+
+[36m [2m❯[22m test/unit/validate.test.js:[2m106:44[22m[39m
+    [90m104| [39m      [90m// Invalid: contains confusing chars[39m
+    [90m105| [39m      expect(isValidUserCode('ABCD-EFG0')).toBe(false); // 0 not allow…
+    [90m106| [39m      expect(isValidUserCode('ABCD-EFGI')).toBe(false); // I not allow…
+    [90m   | [39m                                           [31m^[39m
+    [90m107| [39m      expect(isValidUserCode('ABCD-EFGO')).toBe(false); // O not allow…
+    [90m108| [39m      expect(isValidUserCode('ABCD-EFG1')).toBe(false); // 1 not allow…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/13]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m test/unit/visibility.test.js[2m > [22mvisibility.js[2m > [22mcanAccessSession[2m > [22mEdge cases[2m > [22mprivate session blocks null/undefined tokenData
+[31m[1mTypeError[22m: Cannot read properties of null (reading 'user_id')[39m
+[36m [2m❯[22m canAccessSession src/utils/visibility.js:[2m11:40[22m[39m
+    [90m  9| [39m    [35mreturn[39m [35mtrue[39m[33m;[39m
+    [90m 10| [39m  }
+    [90m 11| [39m  [35mif[39m (session[33m.[39mcreated_by [33m===[39m tokenData[33m.[39muser_id) {
+    [90m   | [39m                                       [31m^[39m
+    [90m 12| [39m    [35mreturn[39m [35mtrue[39m[33m;[39m
+    [90m 13| [39m  }
+[90m [2m❯[22m test/unit/visibility.test.js:[2m132:32[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/13]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m6 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (7)[39m
+[2m      Tests [22m [1m[31m13 failed[39m[22m[2m | [22m[1m[32m148 passed[39m[22m[90m (161)[39m
+[2m   Start at [22m 23:02:12
+[2m   Duration [22m 5.54s[2m (transform 342ms, setup 64ms, collect 1.11s, tests 5.74s, environment 1ms, prepare 1.16s)[22m
+
