@@ -6,6 +6,16 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function buildKnexConfig() {
+  if (process.env.NODE_ENV === 'test') {
+    return {
+      client: 'better-sqlite3',
+      connection: { filename: ':memory:' },
+      useNullAsDefault: true,
+      pool: { min: 1, max: 1, afterCreate(c, done) { c.pragma('foreign_keys = ON'); done(null, c); } },
+      migrations: { directory: join(__dirname, 'migrations') },
+    };
+  }
+
   if (process.env.DATABASE_URL) {
     return {
       client: 'pg',
