@@ -59,13 +59,13 @@ async function startServer() {
         ...process.env,
         NODE_ENV: 'test',
         DATABASE_URL: undefined,
-        PORT: '5173',
+        PORT: '5273',
         DATA_DIR: testDbDir,
         SECRET_KEY: secret,
         GITHUB_CLIENT_ID: 'test-client-id',
         GITHUB_CLIENT_SECRET: 'test-client-secret',
         GITHUB_ORG: 'test-org',
-        BASE_URL: 'http://localhost:5173',
+        BASE_URL: 'http://localhost:5273',
       },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -77,7 +77,7 @@ async function startServer() {
     serverProcess.stdout.on('data', (data) => {
       const output = data.toString();
       process.stdout.write(`[server] ${output}`);
-      if (output.includes('listening on port 5173')) {
+      if (output.includes('listening on port 5273')) {
         if (!resolved) {
           resolved = true;
           // Give it a moment to stabilize

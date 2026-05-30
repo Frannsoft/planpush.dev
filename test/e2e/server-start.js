@@ -19,7 +19,7 @@ const { kv } = await import('../../src/kv.js');
 const { seedUser, seedSession } = await import('../../test/helpers/db.js');
 const { ConnectSessionKnexStore } = await import('connect-session-knex');
 
-const PORT = process.env.PORT || 5173;
+const PORT = process.env.PORT || 5273;
 const SECRET = process.env.SECRET_KEY;
 const FIXTURES_PATH = join(__dirname, '.fixtures.json');
 
