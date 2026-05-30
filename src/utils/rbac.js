@@ -3,7 +3,7 @@
 import { knex } from '../db.js';
 import { kv } from '../kv.js';
 
-const PERM_CACHE_TTL = 60; // seconds
+const PERM_CACHE_TTL = 15; // seconds
 const PERM_CACHE_KEY_PREFIX = 'perms:';
 
 // Define permission scope: which permissions are ownership-scoped
@@ -11,7 +11,14 @@ const PERM_CACHE_KEY_PREFIX = 'perms:';
 // Instance-wide: user with permission can act on any resource
 const OWN_SCOPED_PERMS = ['session_publish', 'session_archive'];
 
-// Resolve the effective permission set for a user from DB, cached for ~60s
+// Permission cache freshness strategy:
+// 1. Short TTL (15s): ensures role changes are reflected within ~15s as a backstop
+// 2. Explicit invalidation: invalidateUserPermCache() called on role/permission changes in src/routes/admin.js
+//    ensures immediate effect without waiting for TTL expiry
+// 3. Related: deactivation cache (src/middleware/auth.js) uses 5-min TTL, cached separately from perms.
+//    Permission cache governs access control; deactivation cache gates authentication.
+
+// Resolve the effective permission set for a user from DB, cached for ~15s
 export async function getUserPermissions(userId) {
   const cacheKey = `${PERM_CACHE_KEY_PREFIX}${userId}`;
   const cached = await kv.get(cacheKey);

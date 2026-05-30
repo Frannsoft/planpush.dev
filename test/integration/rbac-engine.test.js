@@ -91,7 +91,7 @@ describe('RBAC Engine (getUserPermissions, can, requirePermission)', () => {
       expect(perms).toContain('user_manage');
     });
 
-    it('caches permissions for 60s', async () => {
+    it('caches permissions for 15s', async () => {
       const user = await seedUser({ role: 'developer' });
 
       const perms1 = await getUserPermissions(user.id);
@@ -121,6 +121,32 @@ describe('RBAC Engine (getUserPermissions, can, requirePermission)', () => {
       const perms2 = await getUserPermissions(user.id);
       expect(perms2).not.toContain('session_publish');
       expect(perms2).toContain('session_archive');
+    });
+
+    it('reflects role changes within freshness window after invalidation', async () => {
+      // Simulate a role change scenario where invalidation is called
+      const user = await seedUser({ role: 'developer' });
+
+      // Developer initially has session_publish, session_archive (no user_manage)
+      const permsBefore = await getUserPermissions(user.id);
+      expect(permsBefore).toContain('session_publish');
+      expect(permsBefore).not.toContain('user_manage');
+
+      // Simulate role change: replace developer role with admin
+      await knex('user_roles').where({ user_id: user.id, role_id: 'developer' }).delete();
+      await knex('user_roles').insert({ user_id: user.id, role_id: 'admin', origin: 'manual' });
+
+      // Without invalidation, old perms still cached
+      const permsStale = await getUserPermissions(user.id);
+      expect(permsStale).toEqual(permsBefore);
+
+      // Invalidate cache (mimics what handlePatchUserRole does)
+      await invalidateUserPermCache(user.id);
+
+      // Now should see new admin permissions
+      const permsAfter = await getUserPermissions(user.id);
+      expect(permsAfter).toContain('user_manage');
+      expect(permsAfter).toContain('session_delete');
     });
   });
 
