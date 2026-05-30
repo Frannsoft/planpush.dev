@@ -4,3 +4,8 @@ data/
 *.db
 *.db-wal
 *.db-shm
+
+# auto-pickup loop artifacts
+.claude/auto-pickup.lock
+.claude/auto-pickup-stop
+.claude/worktrees/
