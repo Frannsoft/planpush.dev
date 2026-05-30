@@ -31,7 +31,7 @@ export async function up(knex) {
 
   // On SQLite, we need a table rebuild to relax the NOT NULL + UNIQUE constraint on github_user_id
   // On PostgreSQL, we can ALTER COLUMN
-  const isPostgres = knex.client.config.client === 'postgres' || knex.client.config.client === 'postgresql';
+  const isPostgres = ['pg', 'postgres', 'postgresql'].includes(knex.client.config.client);
 
   if (isPostgres) {
     // PostgreSQL: drop UNIQUE constraint, then relax NOT NULL
@@ -111,7 +111,7 @@ export async function down(knex) {
   }
 
   // Restore NOT NULL + UNIQUE on github_user_id
-  const isPostgres = knex.client.config.client === 'postgres' || knex.client.config.client === 'postgresql';
+  const isPostgres = ['pg', 'postgres', 'postgresql'].includes(knex.client.config.client);
 
   if (isPostgres) {
     await knex.schema.raw(`
