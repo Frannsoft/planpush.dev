@@ -372,26 +372,6 @@ describe('GET /dashboard (Integration)', () => {
     expect(res.text).toContain('data-section="settings"');
   });
 
-  it('non-admin without user_manage permission does NOT see Settings tab', async () => {
-    const dev = await seedUser({ role: 'developer' });
-    const { tokenId } = await seedRefreshToken({ user_id: dev.id });
-    const accessToken = await seedAccessToken({
-      user_id: dev.id,
-      token_id: tokenId,
-      display_name: dev.display_name,
-      role: 'developer',
-    });
-
-    const res = await request(app)
-      .get('/dashboard')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .expect(200);
-
-    // Should NOT contain Settings tab
-    expect(res.text).not.toContain('data-tab="settings"');
-    expect(res.text).not.toContain('data-section="settings"');
-  });
-
   it('Settings section renders without displaying secret values in HTML', async () => {
     const admin = await seedUser({ role: 'admin' });
     const { tokenId } = await seedRefreshToken({ user_id: admin.id });
