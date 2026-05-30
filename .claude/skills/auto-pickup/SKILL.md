@@ -74,7 +74,11 @@ This skill exists as a deliberate carve-out from the project rule "implementatio
 
    5. **Flip to In Progress.** `mcp__linear__save_issue` with status=`In Progress`. Post a comment on the issue: `auto-pickup: starting implementation (session <session-id>)`.
 
-   6. **Delegate to an Opus subagent** via the `Agent` tool with `model="opus"`. Prompt template:
+   6. **Assemble related-issue context.** Use `mcp__linear__get_issue` with `includeRelations=true` on the picked issue to read its `relations` (`blockedBy`, `blocks`, `relatedTo`, `duplicateOf`) and `parentId`. For each related identifier — including the parent if set — call `mcp__linear__get_issue` and capture `{identifier, title, status, description}`. Keep all of them; don't filter by status — Done siblings show what was decided, In Progress / Ready ones show what's adjacent. Cap descriptions at ~2000 characters each (truncate with `…` if longer) to keep the prompt bounded. If there are zero relations and no parent, skip this step.
+
+   Additionally, call `mcp__linear__list_comments` on the picked issue and capture any comment whose body starts with `auto-pickup:` — these are the loop's own prior activity on this issue. Cap each comment body at ~500 chars. If at least one is a `auto-pickup: decomposed into …` comment, this picked issue is a **re-pickup of a previously-decomposed parent** — the subagent's prompt step 0c uses this signal to force a completeness audit before returning `merged`.
+
+   7. **Delegate to an Opus subagent** via the `Agent` tool with `model="opus"`. Prompt template:
 
       ```
       You are working on Linear issue <IDENTIFIER>: <TITLE>.
@@ -82,21 +86,48 @@ This skill exists as a deliberate carve-out from the project rule "implementatio
       Full issue description:
       <DESCRIPTION>
 
+      Related Linear issues (parent / blockers / related — for context only; do NOT
+      re-implement them, but DO honor any decisions they locked in):
+      <RELATED_CONTEXT — for each related issue, a block of:
+        ### <IDENTIFIER> (<STATUS>): <TITLE>
+        <DESCRIPTION truncated to ~2000 chars>
+      — or "(none)" if empty>
+
+      Prior auto-pickup activity on this issue (the loop's own `auto-pickup:`-prefixed comments):
+      <PRIOR_AUTO_PICKUP_COMMENTS — for each, "<createdAt>: <body truncated to ~500 chars>", or "(none)" if empty>
+
       Treat the issue description as the spec. Follow CLAUDE.md in the repo root for all conventions
       (code style, security patterns, route/migration conventions). PlanPush is an Express 5 / Node 22+
       ESM app using Knex.js (SQLite via better-sqlite3 by default). Specific requirements:
 
-      0. UPFRONT COMPLEXITY CHECK. Before doing anything else, read the issue's
-         ## Implementation Plan. Decide whether you can reliably complete it in
-         one pass. It is TOO LARGE if any of these hold:
-           - The plan reads as 3+ distinct phases that should each be independently
-             testable / mergeable.
-           - It touches more than ~8 source files across unrelated systems.
-           - It introduces a new system AND wires it into existing systems in the
-             same pass.
-           - The ## Goal includes multiple semicolon- or "and"-joined goals that
-             each justify their own issue.
-         If TOO LARGE upfront, do NOT create a worktree. Return immediately:
+      0a. PROJECT MEMORY PRELOAD. Before anything else, read
+          `~/.claude/projects/C--Users-Jordan-wkspaces-planpush-dev/memory/MEMORY.md`.
+          It's a one-line-per-entry index of accumulated project context (feedback rules,
+          architectural constraints, prior decisions). For any entry whose description
+          plausibly relates to this issue, read the linked memory file and follow its guidance.
+          The no-cd-with-git rule, the bump-plugin-version rule, and the rebuild-Docker-after-
+          code-changes rule are particularly load-bearing — load them if they touch your work.
+
+      0b. UPFRONT COMPLEXITY CHECK. Read the issue's ## Implementation Plan. Default to
+          ATTEMPTING the implementation in one pass — decomposition is expensive (it
+          creates Linear churn and delays the work) so only decompose when one-pass
+          completion is genuinely unrealistic. It is TOO LARGE only if MULTIPLE of these
+          hold simultaneously:
+           - The plan reads as 5+ distinct phases that each warrant their own PR
+             (not just numbered steps within a single coherent change).
+           - It touches more than ~20 source files across genuinely unrelated systems
+             (a new system + its natural integration sites is ONE pass, not two).
+           - The ## Goal contains 3+ semicolon- or "and"-joined goals that each
+             justify a standalone issue (a single feature with sub-mechanics is fine).
+           - Implementing it would realistically require 4+ hours of focused work,
+             even with the plan fully specified.
+          A single new system that wires into existing systems is NORMAL scope — implement
+          it. A feature with 3-4 implementation phases is NORMAL scope — implement it
+          phase-by-phase in one worktree, with one commit per phase if helpful, and merge
+          at the end. When in doubt, attempt; you can still bail to `too_large` mid-attempt
+          (see step 3) if the work genuinely explodes.
+
+          If TOO LARGE upfront, do NOT create a worktree. Return immediately:
            {"status":"too_large","reason":"<one-line cause>",
             "subIssues":[
               {"title":"<short imperative title>","priority":<0-4>,
@@ -107,6 +138,37 @@ This skill exists as a deliberate carve-out from the project rule "implementatio
          Sub-issues should be sequenced so #1 is independently mergeable, #2 builds
          on #1, etc. Inherit `priority` from the parent unless one sub-issue is
          genuinely more urgent.
+
+      0c. RE-PICKUP COMPLETENESS AUDIT. The "Prior auto-pickup activity" block
+          above tells you whether this is a re-pickup of a previously-decomposed
+          parent. If it contains at least one `auto-pickup: decomposed into …`
+          comment, you ARE that re-pickup. Do NOT trust "all children Done =
+          parent Done" — the children may have each shipped their own narrow
+          scope while leaving the parent's cross-cutting promise partly
+          unfulfilled (e.g. a parent promising "a test file per route" whose
+          children each shipped one route's tests, leaving two routes silently
+          uncovered).
+
+          Before deciding to return `merged`, run this audit:
+           - Re-read the parent's ## Goal and ## Acceptance (if present)
+             line by line.
+           - If the Goal enumerates targets ("one X per Y" with a fixed list
+             of Y; "wire each of A/B/C"; "cover every route/migration/endpoint"),
+             grep the codebase and confirm a real code path exists for EVERY
+             enumerated target. Do not stop at "5 of 6 wired — close enough."
+           - For each entry in ## Files to modify (if the parent lists any),
+             verify a child's commit actually touched it
+             (`git log --oneline -- <file>`).
+           - If ANY enumerated target is missing OR any Files-to-modify entry
+             is untouched: return `too_large` with a SINGLE follow-up sub-issue
+             whose title is `Finish/Wire <parent topic> — <specific gap>`,
+             NOT `merged`. Inherit priority from the parent.
+           - Return `merged` (with `filesChanged: 0` if no new code is needed)
+             ONLY when every enumeration and every listed file is verifiably
+             satisfied.
+
+          This audit applies ONLY on re-pickup; first-encounter parents use
+          0b's normal complexity check and skip this step.
 
       1. Create an isolated worktree off `main`:
            git worktree add .claude/worktrees/<IDENTIFIER-slug> -b <IDENTIFIER-slug> main
@@ -138,11 +200,51 @@ This skill exists as a deliberate carve-out from the project rule "implementatio
            - True blocker → return:
              {"status":"blocked","reason":"<one-line cause>"}
 
-           - Too large after attempt → return the same `too_large` shape as step 0,
+           - Too large after attempt → return the same `too_large` shape as step 0b,
              with `subIssues` broken out from what you learned during the failed
              attempt:
              {"status":"too_large","reason":"<one-line cause from the attempt>",
               "subIssues":[...]}
+
+      3b. PRE-MERGE FILE-PLAN AUDIT. The smoke test passing does not prove the
+          plan was followed — an agent can ship `merged` with explicit
+          Files-to-delete or Files-to-modify items silently skipped, and the app
+          still boots because the dead code is unreachable (e.g. a refactor lists
+          three route/util files to delete but leaves one behind as a stub with a
+          now-broken import to the just-deleted module; the server still boots and
+          `/health` still returns 200 because nothing reachable imports the stub).
+          Run this audit BEFORE committing. It is mechanical and cheap.
+
+          For each entry in the issue's ## Files to delete (if the section exists):
+           - Run `test -e <path>` from the worktree root. If the file still exists,
+             the deletion was not completed.
+           - Do NOT leave it as a stub, a re-export shim, or "kept for backward
+             compatibility." The plan said delete; delete it.
+           - Options:
+              a) Complete the deletion now: remove the file, fix any newly-broken
+                 imports by repointing them at the canonical source, re-run the
+                 smoke test, re-run this audit. Repeat until the audit clears.
+              b) If completion is genuinely impossible in this pass (surviving
+                 callers you can't refactor in scope), revert local changes
+                 (`git restore .`), exit the worktree, and return `too_large`
+                 with a single follow-up titled `Finish deletion of <files>`.
+
+          For each entry in the issue's ## Files to modify (if the section exists):
+           - Run `git diff --name-only main..HEAD` in the worktree and verify
+             every listed file appears. A listed file that wasn't touched usually
+             means a plan item was silently skipped — investigate.
+           - Allowed exception: a Files-to-modify entry whose Plan rationale no
+             longer applies after upstream changes (rare). If so, record why in
+             the commit message; do not treat as a free pass.
+
+          Also grep the worktree for orphaned imports of any deleted module
+          (PlanPush uses ESM relative imports with `.js` extensions):
+          `grep -rn "<deleted-module-name>" src/`. Any hit is a broken import the
+          agent missed. Fix or escalate before merging.
+
+          Skip this audit entirely if the issue body contains neither
+          ## Files to delete nor ## Files to modify (the plan made no
+          file-system promises to check).
 
       4. Commit (no Co-Authored-By trailer — see global CLAUDE.md), merge to main
          with `--no-ff` using message `merge: <branch-name>`, remove the worktree
@@ -161,7 +263,7 @@ This skill exists as a deliberate carve-out from the project rule "implementatio
       Your final message must be ONLY the JSON summary, nothing else.
       ```
 
-   7. **Parse the subagent's JSON return.**
+   8. **Parse the subagent's JSON return.**
 
       - `status: "merged"` → verify the merge actually happened: `git log main --oneline -1` should show `merge: <branch-name>`. If it doesn't, treat as malformed (see below). On verification: post a comment on the issue: `auto-pickup: merged to main on branch <branch>. Files changed: <n>.` Then `mcp__linear__save_issue` with status=`Done`. Continue to next iteration.
 
@@ -171,7 +273,7 @@ This skill exists as a deliberate carve-out from the project rule "implementatio
 
       - Any other / malformed return → treat as blocked. Comment: `auto-pickup: subagent returned malformed result; flipping back to Ready.` Flip to Ready. Continue.
 
-   8. Loop back to step 1.
+   9. Loop back to step 1.
 
 ### Decomposition (handling `status: "too_large"`)
 
@@ -213,7 +315,7 @@ When the subagent returns `too_large`, the parent loop must:
 
 5. **Continue.** The next iteration will refresh the Ready queue, and one of the new sub-issues will sort to the top (sub-issues > non-sub-issues in the selection order).
 
-When the parent is eventually picked up again (all children Done, no longer blocked): the subagent treats it as a normal issue. Typically the parent's `## Implementation Plan` is now satisfied by the children's merged work — the subagent should verify nothing remains to do and return `merged` with `filesChanged: 0`, or do residual integration work if any. The parent loop verifies via `git log` exactly as for any other merged issue.
+When the parent is eventually picked up again (all children Done, no longer blocked), the subagent MUST run the re-pickup completeness audit defined in prompt step 0c before deciding `merged`. "All children Done" is necessary but not sufficient: the children's individual narrow scopes can collectively leave the parent's cross-cutting promise partly unfulfilled — e.g. a parent promising "a test file per route" can have every child marked Done while two routes were silently left uncovered. The audit forces the subagent to grep for each enumerated target in the parent's Goal before returning `merged`. The parent loop verifies via `git log` exactly as for any other merged issue.
 
 **3. On loop exit** (queue empty, all-blocked, or stop flag): delete `.claude/auto-pickup.lock`. Print a final summary: how many issues were merged, how many were blocked, and which ones.
 
