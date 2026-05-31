@@ -146,7 +146,9 @@ describe('Settings API (/api/admin/settings)', () => {
         .expect(200);
 
       expect(res.body.ok).toBe(true);
-      expect(res.body.restartRequired).toBe(false);
+      // Every setting is hydrated into process.env at startup, so any change
+      // requires a restart to take effect.
+      expect(res.body.restartRequired).toBe(true);
 
       // Verify in DB
       const webhookRow = await knex('settings').where({ key: 'SLACK_WEBHOOK_URL' }).first();

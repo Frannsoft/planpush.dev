@@ -1,6 +1,17 @@
-import { app } from './app.js';
 import { knex } from './db.js';
 import { kv } from './kv.js';
+import { hydrateSettingsIntoEnv } from './utils/settings.js';
+
+// Importing './db.js' runs migrations at module load (top-level await), so the
+// settings table exists by here. Load DB-backed settings into process.env
+// BEFORE app.js is evaluated — app.js reads AUTH_PROVIDER, the provider
+// credentials, BASE_URL, and session timeouts at module-load time. ENV WINS:
+// explicit env vars are never overwritten.
+await hydrateSettingsIntoEnv();
+
+// Dynamic import so app.js module evaluation happens AFTER hydration above
+// (static imports are hoisted and would run before any statement here).
+const { app } = await import('./app.js');
 
 const PORT = process.env.PORT || 3000;
 

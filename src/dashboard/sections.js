@@ -414,6 +414,59 @@ export function renderSettingsSection() {
             </div>
             <div class="settings-hint">Secret field: never displayed in HTML</div>
           </div>
+          <div class="settings-group">
+            <label class="settings-label">Post-Logout Redirect URI</label>
+            <div class="settings-field">
+              <input type="text" class="settings-input" id="setting-POST_LOGOUT_REDIRECT_URI" placeholder="https://planpush.example.com" />
+            </div>
+            <div class="settings-hint">Okta RP-initiated logout target (defaults to Base URL)</div>
+          </div>
+        </div>
+
+        <!-- GitHub OAuth section -->
+        <div class="settings-section">
+          <div class="settings-section-title">GitHub OAuth</div>
+          <div class="settings-group">
+            <label class="settings-label">GitHub Client ID</label>
+            <div class="settings-field">
+              <input type="text" class="settings-input" id="setting-GITHUB_CLIENT_ID" placeholder="Iv1.xxxxxxxxxxxx" />
+            </div>
+            <div class="settings-hint">Router: changes require restart</div>
+          </div>
+          <div class="settings-group">
+            <label class="settings-label">GitHub Client Secret</label>
+            <div class="settings-field">
+              <input type="password" class="settings-input" id="setting-GITHUB_CLIENT_SECRET" placeholder="••••••••••••" />
+              <button class="settings-secret-replace" data-field="GITHUB_CLIENT_SECRET">Replace</button>
+            </div>
+            <div class="settings-hint">Secret field: never displayed in HTML</div>
+          </div>
+          <div class="settings-group">
+            <label class="settings-label">GitHub Org</label>
+            <div class="settings-field">
+              <input type="text" class="settings-input" id="setting-GITHUB_ORG" placeholder="your-org" />
+            </div>
+            <div class="settings-hint">Required membership for access (GitHub provider)</div>
+          </div>
+        </div>
+
+        <!-- Sessions section -->
+        <div class="settings-section">
+          <div class="settings-section-title">Sessions</div>
+          <div class="settings-group">
+            <label class="settings-label">Idle Timeout (seconds)</label>
+            <div class="settings-field">
+              <input type="text" class="settings-input" id="setting-SESSION_IDLE_TIMEOUT" placeholder="28800" inputmode="numeric" />
+            </div>
+            <div class="settings-hint">Rolling timeout, reset on each request (default 8h)</div>
+          </div>
+          <div class="settings-group">
+            <label class="settings-label">Max Age (seconds)</label>
+            <div class="settings-field">
+              <input type="text" class="settings-input" id="setting-SESSION_MAX_AGE" placeholder="604800" inputmode="numeric" />
+            </div>
+            <div class="settings-hint">Absolute max session lifespan (default 7d)</div>
+          </div>
         </div>
 
         <!-- Integrations section -->

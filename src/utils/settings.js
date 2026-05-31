@@ -11,6 +11,12 @@ const SETTINGS_METADATA = {
   OKTA_ISSUER: { isSecret: false, envVar: 'OKTA_ISSUER' },
   OKTA_CLIENT_ID: { isSecret: false, envVar: 'OKTA_CLIENT_ID' },
   OKTA_CLIENT_SECRET: { isSecret: true, envVar: 'OKTA_CLIENT_SECRET' },
+  GITHUB_CLIENT_ID: { isSecret: false, envVar: 'GITHUB_CLIENT_ID' },
+  GITHUB_CLIENT_SECRET: { isSecret: true, envVar: 'GITHUB_CLIENT_SECRET' },
+  GITHUB_ORG: { isSecret: false, envVar: 'GITHUB_ORG' },
+  POST_LOGOUT_REDIRECT_URI: { isSecret: false, envVar: 'POST_LOGOUT_REDIRECT_URI' },
+  SESSION_IDLE_TIMEOUT: { isSecret: false, envVar: 'SESSION_IDLE_TIMEOUT' },
+  SESSION_MAX_AGE: { isSecret: false, envVar: 'SESSION_MAX_AGE' },
   INITIAL_ADMIN_EMAILS: { isSecret: false, envVar: 'INITIAL_ADMIN_EMAILS' },
   SLACK_WEBHOOK_URL: { isSecret: false, envVar: 'SLACK_WEBHOOK_URL' },
   SCIM_AUTH_TOKEN: { isSecret: true, envVar: 'SCIM_AUTH_TOKEN' },
@@ -167,4 +173,52 @@ export function isSecretSetting(key) {
   const meta = SETTINGS_METADATA[key];
   if (!meta) return false;
   return meta.isSecret;
+}
+
+/**
+ * Load DB-backed settings into process.env at startup.
+ *
+ * The whole runtime reads config from process.env (auth provider routing,
+ * provider clients, session middleware, etc.), so DB-stored settings only take
+ * effect once copied into the environment. This must run BEFORE app.js is
+ * evaluated, because app.js reads several of these at module-load time.
+ *
+ * ENV WINS: an existing process.env value is never overwritten, so explicit
+ * env/deploy configuration always takes precedence over DB-stored settings
+ * (mirrors getSetting()/getSettingValue()).
+ *
+ * Tolerates a missing settings table (fresh DB before migrations) by no-op.
+ */
+export async function hydrateSettingsIntoEnv() {
+  let rows;
+  try {
+    rows = await knex('settings').select('key', 'value');
+  } catch (err) {
+    // settings table not present yet — nothing to hydrate
+    console.error('[settings] hydrate skipped:', err.message);
+    return;
+  }
+
+  let applied = 0;
+  for (const row of rows) {
+    const meta = SETTINGS_METADATA[row.key];
+    if (!meta) continue;                                   // unknown/legacy key
+    if (process.env[meta.envVar] !== undefined) continue;  // ENV WINS
+    if (row.value === null || row.value === '') continue;  // unset
+
+    let value = row.value;
+    if (meta.isSecret) {
+      try {
+        value = decryptSecret(row.value, process.env.SECRET_KEY);
+      } catch (err) {
+        console.error(`[settings] hydrate: failed to decrypt ${row.key}:`, err.message);
+        continue;
+      }
+    }
+
+    process.env[meta.envVar] = value;
+    applied++;
+  }
+
+  if (applied > 0) console.log(`[settings] hydrated ${applied} setting(s) from database`);
 }

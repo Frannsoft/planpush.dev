@@ -462,15 +462,18 @@ export const DASHBOARD_JS = `
 
       var updates = {};
       var fieldsToSave = ['AUTH_PROVIDER', 'OKTA_ISSUER', 'OKTA_CLIENT_ID', 'OKTA_CLIENT_SECRET',
+                          'GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'GITHUB_ORG',
+                          'POST_LOGOUT_REDIRECT_URI', 'SESSION_IDLE_TIMEOUT', 'SESSION_MAX_AGE',
                           'INITIAL_ADMIN_EMAILS', 'SLACK_WEBHOOK_URL', 'SCIM_AUTH_TOKEN', 'BASE_URL'];
+      // Secret fields render as masked password inputs; an empty/placeholder value
+      // means "unchanged", so only send them when the admin typed a new value.
+      var secretFields = ['OKTA_CLIENT_SECRET', 'GITHUB_CLIENT_SECRET', 'SLACK_WEBHOOK_URL', 'SCIM_AUTH_TOKEN'];
 
       fieldsToSave.forEach(function(key) {
         var input = document.getElementById('setting-' + key);
         if (input && !input.disabled) {
           var value = input.value.trim();
-          // Only include non-empty secret fields (empty means unchanged)
-          if (key === 'OKTA_CLIENT_ID' || key === 'OKTA_CLIENT_SECRET' ||
-              key === 'SLACK_WEBHOOK_URL' || key === 'SCIM_AUTH_TOKEN') {
+          if (secretFields.indexOf(key) !== -1) {
             // For secret fields, only send if user explicitly entered something
             if (value && input.type === 'password' && value !== '••••••••••••') {
               updates[key] = value;

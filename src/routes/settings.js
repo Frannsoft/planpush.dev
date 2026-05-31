@@ -79,6 +79,8 @@ export async function handlePatchSettings(req, res) {
       // Validate key is known
       const validKeys = [
         'AUTH_PROVIDER', 'OKTA_ISSUER', 'OKTA_CLIENT_ID', 'OKTA_CLIENT_SECRET',
+        'GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'GITHUB_ORG',
+        'POST_LOGOUT_REDIRECT_URI', 'SESSION_IDLE_TIMEOUT', 'SESSION_MAX_AGE',
         'INITIAL_ADMIN_EMAILS', 'SLACK_WEBHOOK_URL', 'SCIM_AUTH_TOKEN', 'BASE_URL',
       ];
       if (!validKeys.includes(key)) {
@@ -96,11 +98,14 @@ export async function handlePatchSettings(req, res) {
       if (key === 'AUTH_PROVIDER' && value !== null && !['github', 'okta'].includes(value)) {
         return res.status(400).json({ error: 'AUTH_PROVIDER must be github or okta' });
       }
-
-      // Mark routing fields as requiring restart
-      if (['AUTH_PROVIDER', 'OKTA_ISSUER', 'OKTA_CLIENT_ID'].includes(key)) {
-        restartRequired = true;
+      if ((key === 'SESSION_IDLE_TIMEOUT' || key === 'SESSION_MAX_AGE') &&
+          value !== null && value !== '' && !/^\d+$/.test(String(value))) {
+        return res.status(400).json({ error: `${key} must be a positive integer (seconds)` });
       }
+
+      // Every setting is hydrated into process.env at startup, so any change
+      // requires a restart to take effect.
+      restartRequired = true;
 
       // Store encrypted secret or plain value
       const isSecret = isSecretSetting(key);

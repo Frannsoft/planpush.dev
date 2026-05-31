@@ -47,6 +47,23 @@ Server runs on port 3000. Requires `.env` (see `.env.example`).
 - **Detect Postgres via `['pg','postgres','postgresql'].includes(knex.client.config.client)`** — `db.js` sets the client to `'pg'`, so a `=== 'postgres'` check is always false on Postgres (this caused migration 007 to run its SQLite table-rebuild path on Render and fail)
 - **When you add or change a migration, run `npm run test:migrations:pg`** — it applies the full chain up → rollback-all → up against a real throwaway Postgres (testcontainers/Docker, or `PG_TEST_URL`). The default `npm test` only covers SQLite, which silently tolerates Postgres-only failures (FK-dependency drops, `ALTER`-vs-rebuild). Auto-skips if Docker isn't running, so it never blocks the SQLite suite.
 
+## Settings (env + DB-backed admin UI)
+
+- Runtime config is read from `process.env` throughout (auth provider routing, provider clients, session middleware, etc.)
+- Admins can manage most settings at runtime via **Dashboard → Integrations** (`renderSettingsSection` in `src/dashboard/sections.js`), stored encrypted-at-rest in the `settings` table (`src/routes/settings.js`, `src/utils/settings.js`)
+- **`hydrateSettingsIntoEnv()` (`src/utils/settings.js`) bridges DB → `process.env` at startup** — called in `src/server.js` *before* `app.js` is imported (via dynamic `import()`), because `app.js` reads `AUTH_PROVIDER`/credentials/`BASE_URL`/session timeouts at module-load time. Static-importing `app.js` would evaluate it before hydration runs.
+- **ENV WINS**: an env var that is already set is never overwritten by the DB value (and shows as locked/read-only in the UI). This is the migration path from `.env` to DB config.
+- Because the DB→env bridge only runs at boot, **every settings change requires a restart** to take effect — `handlePatchSettings` always returns `restartRequired: true`.
+- UI-managed keys: `AUTH_PROVIDER`, `OKTA_ISSUER/CLIENT_ID/CLIENT_SECRET`, `GITHUB_CLIENT_ID/CLIENT_SECRET/ORG`, `POST_LOGOUT_REDIRECT_URI`, `SESSION_IDLE_TIMEOUT`, `SESSION_MAX_AGE`, `INITIAL_ADMIN_EMAILS`, `SLACK_WEBHOOK_URL`, `SCIM_AUTH_TOKEN`, `BASE_URL`. Add new keys in `SETTINGS_METADATA`, the route's `validKeys`, the UI form, and `client.js` `fieldsToSave`/`secretFields`.
+- Bootstrap vars are intentionally env-only (NOT in the UI): `SECRET_KEY` (it encrypts the settings table's own secrets — chicken-and-egg), `DATABASE_URL` (needed to reach the DB), `PORT`/`NODE_ENV` (read before hydration can run)
+
+## Switching auth provider (GitHub ↔ Okta)
+
+- Set `AUTH_PROVIDER=okta` + `OKTA_ISSUER/CLIENT_ID/CLIENT_SECRET` (env or via the admin UI), then restart
+- Okta denies users whose groups map to no role (403), so **`INITIAL_ADMIN_EMAILS` must be set** (verified email only) to bootstrap the first admin — unlike GitHub's first-user-becomes-admin
+- Map Okta groups → roles in `group_role_map` (admin UI, Okta-only routes registered in `app.js`)
+- Okta identities are keyed by `(idp='okta', subject)` in `user_identities` — they don't collide with existing GitHub users
+
 ## Security
 
 - `helmet` for global security headers (HSTS, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, etc.)
